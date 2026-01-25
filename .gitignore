@@ -1,0 +1,65 @@
+
+# Ignore Terraform state files (store sensitive info like AWS keys)
+*.tfstate
+*.tfstate.backup
+.terraform/
+terraform.tfvars
+.terraform.lock.hcl
+terraform.tfstate.d/
+output.tfstate
+*.tfplan
+
+# Node.js (package.json detected)
+node_modules/
+package-lock.json
+
+# Python virtual environments (if using venv or similar)
+env/
+venv/
+*.env
+test.env
+
+# Ignore Python dependencies (if any)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore AWS credentials (VERY IMPORTANT)
+.aws/
+credentials
+config
+# Ignore VS Code settings (optional)
+.vscode/
+# Ignore logs and temporary files
+*.log
+*.tmp
+.DS_Store
+aws_dev_workflow.sh
+
+# IDE/editor files
+.idea/
+*.swp
+
+# Gitleaks binaries & archives
+gitleaks
+gitleaks.tar.gz
+gitleaks-linux-arm64.tar.gz
+
+# key files
+# These files may contain sensitive information and should be kept private
+# and not shared in version control.
+# Make sure to replace these with your actual key file names
+# and paths as needed.
+kali-key
+kali-key.pub
+kali.sh
+phantomwall-keypair.pem
+
+# Ignore any other files or directories that are not relevant to the project
+modules/
+output.json
+opencanary.sh
+s3_event.tf
+sagemaker-training-config.json
+codes/

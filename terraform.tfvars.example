@@ -1,0 +1,10 @@
+# Example terraform variables for local development
+public_subnet_id = "subnet-0123456789abcdef0"
+key_pair_name    = "my-keypair"
+instance_type    = "t3a.small"
+random_name      = "honeypot"
+project_name     = "phantomwall"
+environment      = "dev"
+create_key_pair   = false
+# If create_key_pair = true, set a local path where the private key will be written
+# key_private_key_path = "./phantomwall_honeypot_key.pem"
