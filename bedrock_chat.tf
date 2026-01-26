@@ -78,5 +78,5 @@ resource "aws_lambda_function" "suricata_chat" {
 
 resource "aws_cloudwatch_log_group" "suricata_chat" {
   name              = "/aws/lambda/${aws_lambda_function.suricata_chat.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7  # Reduced from 14 days for cost optimization
 }

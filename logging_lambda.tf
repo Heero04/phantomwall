@@ -3,7 +3,7 @@
 
 resource "aws_cloudwatch_log_group" "suricata" {
   name              = var.cw_log_group
-  retention_in_days = 30
+  retention_in_days = 7  # Reduced from 30 days - data persists in DynamoDB (~$4/month savings)
 
   tags = {
     Project = var.project_name
@@ -93,7 +93,7 @@ resource "aws_lambda_function" "suricata_ingest" {
   filename         = data.archive_file.suricata_lambda.output_path
   source_code_hash = data.archive_file.suricata_lambda.output_base64sha256
   timeout          = 30
-  memory_size      = 512
+  memory_size      = 256  # Reduced from 512 MB - sufficient for JSON processing (~$1/month savings)
 
   environment {
     variables = {

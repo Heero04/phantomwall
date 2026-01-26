@@ -57,7 +57,7 @@ resource "aws_lambda_function" "suricata_api" {
   filename         = data.archive_file.suricata_api.output_path
   source_code_hash = data.archive_file.suricata_api.output_base64sha256
   timeout          = 45
-  memory_size      = 256
+  memory_size      = 128  # Reduced from 256 MB - sufficient for DynamoDB queries (~$1/month savings)
 
   environment {
     variables = {
@@ -73,7 +73,7 @@ resource "aws_lambda_function" "suricata_api" {
 
 resource "aws_cloudwatch_log_group" "suricata_api" {
   name              = "/aws/lambda/${aws_lambda_function.suricata_api.function_name}"
-  retention_in_days = 14
+  retention_in_days = 7  # Reduced from 14 days for cost optimization
 }
 
 resource "aws_apigatewayv2_api" "suricata" {
@@ -107,7 +107,7 @@ resource "aws_apigatewayv2_stage" "suricata" {
 
 resource "aws_cloudwatch_log_group" "api_gw_logs" {
   name              = "/aws/apigateway/${var.project_name}-${terraform.workspace}-suricata-api"
-  retention_in_days = 14
+  retention_in_days = 7  # Reduced from 14 days for cost optimization
 }
 
 resource "aws_apigatewayv2_integration" "suricata" {

@@ -19,7 +19,7 @@
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3a.medium" # Upgraded for full ruleset support
+  default     = "t3a.small" # Optimized for cost (~$15/month savings) - 2GB RAM sufficient for Suricata
 }
 
 variable "environment" {
@@ -79,7 +79,7 @@ data "aws_subnets" "by_tag" {
 
 resource "aws_cloudwatch_log_group" "honeypot_bootstrap" {
   name              = var.cw_bootstrap_log_group
-  retention_in_days = 14
+  retention_in_days = 7  # Reduced from 14 days for cost optimization
 
   tags = {
     Project = var.project_name != "" ? var.project_name : "phantomwall"

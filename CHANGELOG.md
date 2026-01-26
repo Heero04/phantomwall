@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.6] - 2026-01-25
+
+### Cost optimization
+
+- **EC2 instance right-sizing**: Changed honeypot from `t3a.medium` (4GB) to `t3a.small` (2GB) - saves ~$15/month while maintaining full performance for Suricata IDS workload
+- **Lambda memory optimization**: Reduced suricata_ingest from 512MB to 256MB and suricata_api from 256MB to 128MB - saves ~$2/month for simple JSON processing tasks
+- **CloudWatch log retention reduction**: Reduced retention from 14-30 days to 7 days across all log groups - saves ~$4/month since event data persists in DynamoDB
+- **Total cost reduction**: ~35% savings (~$21/month) bringing monthly costs from $60-80 down to $38-47
+- Added comprehensive `COST-OPTIMIZATION.md` documentation with current costs, future optimization strategies, and monitoring best practices
+
 ## [v0.5] - 2026-01-24
 
 ### Security hardening for GitHub repository
