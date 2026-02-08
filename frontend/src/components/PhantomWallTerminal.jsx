@@ -4,11 +4,107 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import 'xterm/css/xterm.css';
 
-const PhantomWallTerminal = ({ 
-  title = "PhantomWall Terminal", 
-  className = "",
-  height = "500px",
-  theme = "dark"
+const styles = {
+  wrapper: {
+    background: '#1e293b',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    border: '1px solid #334155',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+  },
+  header: {
+    background: '#0f172a',
+    padding: '0.65rem 1rem',
+    borderBottom: '1px solid #334155',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '0.75rem',
+    flexShrink: 0,
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  dots: {
+    display: 'flex',
+    gap: '6px',
+  },
+  dot: (color) => ({
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    background: color,
+  }),
+  title: {
+    color: '#e2e8f0',
+    fontWeight: 600,
+    fontSize: '0.85rem',
+  },
+  statusBadge: (color) => ({
+    fontSize: '0.7rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    color,
+  }),
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  select: {
+    padding: '0.3rem 0.5rem',
+    fontSize: '0.75rem',
+    background: '#1e293b',
+    color: '#e2e8f0',
+    border: '1px solid #475569',
+    borderRadius: '6px',
+    outline: 'none',
+  },
+  btnConnect: {
+    padding: '0.3rem 0.75rem',
+    fontSize: '0.75rem',
+    background: '#10b981',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+  btnDisconnect: {
+    padding: '0.3rem 0.75rem',
+    fontSize: '0.75rem',
+    background: '#ef4444',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+  btnClear: {
+    padding: '0.3rem 0.75rem',
+    fontSize: '0.75rem',
+    background: '#475569',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontWeight: 600,
+  },
+  termContainer: {
+    flex: 1,
+    cursor: 'text',
+    minHeight: 0,
+  },
+};
+
+const PhantomWallTerminal = ({
+  title = 'PhantomWall Terminal',
+  className = '',
 }) => {
   const terminalRef = useRef(null);
   const xtermRef = useRef(null);
@@ -18,91 +114,75 @@ const PhantomWallTerminal = ({
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [instances, setInstances] = useState([]);
   const [selectedInstance, setSelectedInstance] = useState('');
-  const [showInstanceSelector, setShowInstanceSelector] = useState(true);
 
-  // Terminal themes
   const terminalTheme = {
-    background: '#1e1e1e',
-    foreground: '#ffffff',
-    cursor: '#ffffff',
-    cursorAccent: '#000000',
+    background: '#1e293b',
+    foreground: '#e2e8f0',
+    cursor: '#e2e8f0',
+    cursorAccent: '#0f172a',
     selection: '#ffffff40',
-    black: '#000000',
-    red: '#cd3131',
-    green: '#0dbc79',
-    yellow: '#e5e510',
-    blue: '#2472c8',
-    magenta: '#bc3fbc',
-    cyan: '#11a8cd',
-    white: '#e5e5e5',
-    brightBlack: '#666666',
-    brightRed: '#f14c4c',
-    brightGreen: '#23d18b',
-    brightYellow: '#f5f543',
-    brightBlue: '#3b8eea',
-    brightMagenta: '#d670d6',
-    brightCyan: '#29b8db',
-    brightWhite: '#ffffff'
+    black: '#0f172a',
+    red: '#ef4444',
+    green: '#10b981',
+    yellow: '#f59e0b',
+    blue: '#3b82f6',
+    magenta: '#a855f7',
+    cyan: '#06b6d4',
+    white: '#e2e8f0',
+    brightBlack: '#64748b',
+    brightRed: '#f87171',
+    brightGreen: '#34d399',
+    brightYellow: '#fbbf24',
+    brightBlue: '#60a5fa',
+    brightMagenta: '#c084fc',
+    brightCyan: '#22d3ee',
+    brightWhite: '#f8fafc',
   };
 
-  // Initialize terminal
   useEffect(() => {
     if (!terminalRef.current || xtermRef.current) return;
 
     const terminal = new Terminal({
       theme: terminalTheme,
-      fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Inconsolata", "Roboto Mono", "Source Code Pro", monospace',
+      fontFamily: '"Cascadia Code", "Fira Code", "SF Mono", Monaco, "Inconsolata", monospace',
       fontSize: 14,
       fontWeight: 400,
       lineHeight: 1.2,
-      letterSpacing: 0,
       cursorBlink: true,
       cursorStyle: 'block',
-      bellStyle: 'sound',
       scrollback: 1000,
-      tabStopWidth: 4
+      tabStopWidth: 4,
     });
 
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon();
-    
+
     terminal.loadAddon(fitAddon);
     terminal.loadAddon(webLinksAddon);
-    
     terminal.open(terminalRef.current);
     fitAddon.fit();
 
     xtermRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
-    // Show welcome message
-    terminal.writeln('\x1b[36m╔══════════════════════════════════════════════════════════════════╗\x1b[0m');
-    terminal.writeln('\x1b[36m║                    \x1b[1m\x1b[33mPhantomWall Terminal\x1b[0m\x1b[36m                        ║\x1b[0m');
-    terminal.writeln('\x1b[36m║              Ready for SSM connection to honeypot instances       ║\x1b[0m');
-    terminal.writeln('\x1b[36m╚══════════════════════════════════════════════════════════════════╝\x1b[0m');
+    terminal.writeln('\x1b[36m------------------------------------------------------------\x1b[0m');
+    terminal.writeln('\x1b[36m  \x1b[1m\x1b[33mPhantomWall Terminal\x1b[0m');
+    terminal.writeln('\x1b[36m  Ready for SSM connection to honeypot instances\x1b[0m');
+    terminal.writeln('\x1b[36m------------------------------------------------------------\x1b[0m');
     terminal.writeln('');
 
-    // Handle window resize
     const handleResize = () => {
-      if (fitAddonRef.current) {
-        fitAddonRef.current.fit();
-      }
+      if (fitAddonRef.current) fitAddonRef.current.fit();
     };
-
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-      if (xtermRef.current) {
-        xtermRef.current.dispose();
-      }
+      if (wsRef.current) wsRef.current.close();
+      if (xtermRef.current) xtermRef.current.dispose();
     };
   }, []);
 
-  // Load instances on component mount
   useEffect(() => {
     loadInstances();
   }, []);
@@ -110,11 +190,7 @@ const PhantomWallTerminal = ({
   const loadInstances = async () => {
     try {
       const ws = new WebSocket('ws://localhost:8080/terminal');
-      
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: 'list-instances' }));
-      };
-      
+      ws.onopen = () => ws.send(JSON.stringify({ type: 'list-instances' }));
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -122,232 +198,172 @@ const PhantomWallTerminal = ({
             setInstances(data.instances);
             ws.close();
           }
-        } catch (e) {
-          console.log('Non-JSON message:', event.data);
+        } catch {
+          /* non-json */
         }
       };
-      
       ws.onerror = () => {
-        if (xtermRef.current) {
-          xtermRef.current.writeln('\x1b[31m❌ Cannot connect to backend server\x1b[0m');
-        }
+        if (xtermRef.current)
+          xtermRef.current.writeln('\x1b[31mCannot connect to backend server\x1b[0m');
       };
-      
     } catch (error) {
-      if (xtermRef.current) {
-        xtermRef.current.writeln(`\x1b[31m❌ Failed to load instances: ${error.message}\x1b[0m`);
-      }
+      if (xtermRef.current)
+        xtermRef.current.writeln(`\x1b[31mFailed to load instances: ${error.message}\x1b[0m`);
     }
   };
 
   const connectToInstance = () => {
     if (!selectedInstance) {
-      if (xtermRef.current) {
-        xtermRef.current.writeln('\x1b[31m❌ Please select an instance first\x1b[0m');
-      }
+      if (xtermRef.current)
+        xtermRef.current.writeln('\x1b[31mPlease select an instance first\x1b[0m');
       return;
     }
 
     setConnectionStatus('connecting');
-    setShowInstanceSelector(false);
-
     if (xtermRef.current) {
       xtermRef.current.clear();
-      xtermRef.current.writeln(`\x1b[33m🔄 Connecting to ${selectedInstance}...\x1b[0m`);
+      xtermRef.current.writeln(`\x1b[33mConnecting to ${selectedInstance}...\x1b[0m`);
     }
 
     try {
       const ws = new WebSocket('ws://localhost:8080/terminal');
       let inputHandlerSet = false;
-      
-      ws.onopen = () => {
-        ws.send(JSON.stringify({
-          type: 'connect',
-          instanceId: selectedInstance
-        }));
-      };
-      
+
+      ws.onopen = () =>
+        ws.send(JSON.stringify({ type: 'connect', instanceId: selectedInstance }));
+
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
           if (data.type === 'connected') {
             setConnectionStatus('connected');
             setIsConnected(true);
             if (xtermRef.current) {
-              xtermRef.current.writeln(`\x1b[32m✅ Connected to ${data.instanceId}\x1b[0m`);
-              xtermRef.current.writeln('');
-            }
-            
-            // Set up input handling after connection (only once)
-            if (xtermRef.current && !inputHandlerSet) {
-              inputHandlerSet = true;
-              // Focus the terminal
-              xtermRef.current.focus();
-              
-              xtermRef.current.onData((inputData) => {
-                console.log('Sending input:', inputData); // Debug log
-                if (ws.readyState === WebSocket.OPEN) {
-                  ws.send(JSON.stringify({
-                    type: 'input',
-                    data: inputData
-                  }));
-                }
-              });
+              xtermRef.current.writeln(`\x1b[32mConnected to ${data.instanceId}\x1b[0m\n`);
+              if (!inputHandlerSet) {
+                inputHandlerSet = true;
+                xtermRef.current.focus();
+                xtermRef.current.onData((inputData) => {
+                  if (ws.readyState === WebSocket.OPEN)
+                    ws.send(JSON.stringify({ type: 'input', data: inputData }));
+                });
+              }
             }
           } else if (data.type === 'error') {
             setConnectionStatus('error');
-            if (xtermRef.current) {
-              xtermRef.current.writeln(`\x1b[31m❌ Connection failed: ${data.message}\x1b[0m`);
-            }
+            if (xtermRef.current)
+              xtermRef.current.writeln(`\x1b[31mConnection failed: ${data.message}\x1b[0m`);
           } else if (data.type === 'data') {
-            // Handle terminal output data
-            if (xtermRef.current) {
-              xtermRef.current.write(data.data);
-            }
+            if (xtermRef.current) xtermRef.current.write(data.data);
           }
-        } catch (e) {
-          // Raw terminal data - write directly to terminal
-          if (xtermRef.current) {
-            xtermRef.current.write(event.data);
-          }
+        } catch {
+          if (xtermRef.current) xtermRef.current.write(event.data);
         }
       };
 
       ws.onclose = () => {
         setConnectionStatus('disconnected');
         setIsConnected(false);
-        setShowInstanceSelector(true);
-        if (xtermRef.current) {
-          xtermRef.current.writeln('\x1b[33m⚠️ Connection closed\x1b[0m');
-        }
+        if (xtermRef.current)
+          xtermRef.current.writeln('\x1b[33mConnection closed\x1b[0m');
       };
 
       ws.onerror = () => {
         setConnectionStatus('error');
-        if (xtermRef.current) {
-          xtermRef.current.writeln('\x1b[31m❌ WebSocket connection failed\x1b[0m');
-        }
+        if (xtermRef.current)
+          xtermRef.current.writeln('\x1b[31mWebSocket connection failed\x1b[0m');
       };
 
       wsRef.current = ws;
-
     } catch (error) {
       setConnectionStatus('error');
-      if (xtermRef.current) {
-        xtermRef.current.writeln(`\x1b[31m❌ Connection error: ${error.message}\x1b[0m`);
-      }
+      if (xtermRef.current)
+        xtermRef.current.writeln(`\x1b[31mConnection error: ${error.message}\x1b[0m`);
     }
   };
 
   const handleDisconnect = () => {
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
+    if (wsRef.current) wsRef.current.close();
     setConnectionStatus('disconnected');
     setIsConnected(false);
-    setShowInstanceSelector(true);
     if (xtermRef.current) {
       xtermRef.current.clear();
-      xtermRef.current.writeln('\x1b[33m🔌 Disconnected from instance\x1b[0m');
-    }
-  };
-
-  const handleTerminalClick = () => {
-    if (xtermRef.current) {
-      xtermRef.current.focus();
+      xtermRef.current.writeln('\x1b[33mDisconnected from instance\x1b[0m');
     }
   };
 
   const handleClear = () => {
-    if (xtermRef.current) {
-      xtermRef.current.clear();
-    }
+    if (xtermRef.current) xtermRef.current.clear();
   };
 
   const getStatusColor = () => {
     switch (connectionStatus) {
-      case 'connected': return 'text-green-400';
-      case 'connecting': return 'text-yellow-400';
-      case 'error': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (connectionStatus) {
-      case 'connected': return '🟢';
-      case 'connecting': return '🟡';
-      case 'error': return '🔴';
-      default: return '⚪';
+      case 'connected': return '#10b981';
+      case 'connecting': return '#f59e0b';
+      case 'error': return '#ef4444';
+      default: return '#94a3b8';
     }
   };
 
   return (
-    <div className={`bg-gray-900 rounded-lg overflow-hidden border border-gray-700 ${className}`}>
-      {/* Terminal Header */}
-      <div className="bg-gray-800 px-4 py-3 border-b border-gray-700 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="flex space-x-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+    <div style={styles.wrapper} className={className}>
+      <div style={styles.header}>
+        <div style={styles.headerLeft}>
+          <div style={styles.dots}>
+            <span style={styles.dot('#ef4444')} />
+            <span style={styles.dot('#f59e0b')} />
+            <span style={styles.dot('#10b981')} />
           </div>
-          <span className="text-white font-medium">{title}</span>
-          <div className={`text-xs flex items-center space-x-1 ${getStatusColor()}`}>
-            <span>{getStatusIcon()}</span>
-            <span>{connectionStatus}</span>
-          </div>
+          <span style={styles.title}>{title}</span>
+          <span style={styles.statusBadge(getStatusColor())}>
+            {connectionStatus}
+          </span>
         </div>
-        
-        <div className="flex items-center space-x-2">
+
+        <div style={styles.headerRight}>
           {isConnected ? (
-            <button
-              onClick={handleDisconnect}
-              className="px-3 py-1 text-xs bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-            >
+            <button style={styles.btnDisconnect} onClick={handleDisconnect}>
               Disconnect
             </button>
           ) : (
             <>
               {instances.length > 0 && (
                 <select
+                  style={styles.select}
                   value={selectedInstance}
                   onChange={(e) => setSelectedInstance(e.target.value)}
-                  className="px-2 py-1 text-xs bg-gray-700 text-white border border-gray-600 rounded"
                 >
                   <option value="">Select Instance</option>
-                  {instances.map((instance) => (
-                    <option key={instance.instanceId} value={instance.instanceId}>
-                      {instance.name} ({instance.state})
+                  {instances.map((inst) => (
+                    <option key={inst.instanceId} value={inst.instanceId}>
+                      {inst.name} ({inst.state})
                     </option>
                   ))}
                 </select>
               )}
               <button
+                style={{
+                  ...styles.btnConnect,
+                  opacity: !selectedInstance || connectionStatus === 'connecting' ? 0.5 : 1,
+                  cursor: !selectedInstance || connectionStatus === 'connecting' ? 'not-allowed' : 'pointer',
+                }}
                 onClick={connectToInstance}
                 disabled={!selectedInstance || connectionStatus === 'connecting'}
-                className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded transition-colors"
               >
                 {connectionStatus === 'connecting' ? 'Connecting...' : 'Connect'}
               </button>
             </>
           )}
-          <button
-            onClick={handleClear}
-            className="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-700 text-white rounded transition-colors"
-          >
+          <button style={styles.btnClear} onClick={handleClear}>
             Clear
           </button>
         </div>
       </div>
 
-      {/* Terminal Container */}
-      <div 
-        ref={terminalRef} 
-        style={{ height }}
-        className="w-full cursor-text"
-        onClick={handleTerminalClick}
+      <div
+        ref={terminalRef}
+        style={styles.termContainer}
+        onClick={() => xtermRef.current?.focus()}
       />
     </div>
   );

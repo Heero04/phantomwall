@@ -154,7 +154,7 @@ const AlertsTable = () => {
   return (
     <div className="alerts-table-container">
       <div className="alerts-header">
-        <h3>🚨 Security Alerts</h3>
+        <h3>Security Alerts</h3>
         <div className="alerts-meta">
           <span className="alert-count">{alerts.length} alerts</span>
           {loading && <span className="refreshing">Refreshing...</span>}
@@ -217,13 +217,13 @@ const AlertsTable = () => {
         </div>
 
         <button className="refresh-btn" onClick={fetchAlerts} disabled={loading}>
-          🔄 Refresh
+          Refresh
         </button>
       </div>
 
       {error && (
         <div className="error-message">
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
