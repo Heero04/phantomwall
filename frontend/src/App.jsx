@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import QuickAccess from './QuickAccess'
 import Dashboard from './Dashboard_BACKUP'
 import DashboardSafe from './DashboardSafe'
 import DashboardV2 from './DashboardV2'
@@ -414,74 +415,7 @@ export default function App() {
         </Sidebar>
 
         <main className="main">
-          {activePage === 'console' && (
-            <div className="page">
-              <header className="page__header">
-                <h2>Quick Access</h2>
-                <p>Copy one-click commands to reach your honeypot and analyst instances.</p>
-              </header>
-
-              <section className="card">
-                <h3>Honeypot</h3>
-                <label>Public IP</label>
-                <input
-                  value={honeypotIp}
-                  onChange={e => setHoneypotIp(e.target.value)}
-                  placeholder="Enter honeypot IP or leave blank to use SSM"
-                />
-                <div className="actions">
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        'aws ssm start-session --target $(terraform output -raw honeypot_instance_id) --region us-east-1'
-                      )
-                    }
-                  >
-                    Copy SSM start
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        `ssh -i ~/.ssh/phantomwall_honeypot_key.pem ec2-user@${honeypotIp}`
-                      )
-                    }
-                  >
-                    Copy SSH
-                  </button>
-                </div>
-              </section>
-
-              <section className="card">
-                <h3>Kali</h3>
-                <label>Public IP</label>
-                <input
-                  value={kaliIp}
-                  onChange={e => setKaliIp(e.target.value)}
-                  placeholder="Enter kali IP or leave blank to use SSM"
-                />
-                <div className="actions">
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        'aws ssm start-session --target $(terraform output -raw kali_instance_id) --region us-east-1'
-                      )
-                    }
-                  >
-                    Copy SSM start
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        `ssh -i ~/.ssh/phantomwall_kali_key.pem kali@${kaliIp}`
-                      )
-                    }
-                  >
-                    Copy SSH
-                  </button>
-                </div>
-              </section>
-            </div>
-          )}
+          {activePage === 'console' && <QuickAccess />}
 
           {activePage === 'dashboard' && (
             <>
