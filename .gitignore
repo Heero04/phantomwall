@@ -9,6 +9,9 @@ terraform.tfstate.d/
 output.tfstate
 *.tfplan
 
+# Private business strategy (DO NOT COMMIT)
+BUSINESS-STRATEGY-PRIVATE.md
+
 # Node.js (package.json detected)
 node_modules/
 package-lock.json

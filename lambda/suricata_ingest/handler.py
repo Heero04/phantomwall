@@ -10,6 +10,11 @@ import boto3
 _dynamodb = boto3.resource("dynamodb")
 _table = _dynamodb.Table(os.environ["TABLE_NAME"])
 
+# S3 client for raw log storage
+_s3 = boto3.client("s3")
+_s3_bucket = os.environ.get("S3_BUCKET_NAME")
+_s3_enabled = os.environ.get("ENABLE_S3_BACKUP", "false").lower() == "true"
+
 
 def _decode_logs(event):
     data = event.get("awslogs", {}).get("data")
@@ -135,6 +140,39 @@ def _normalize_event(raw_event, fallback_ms):
     return normalized, event_dt.strftime("%Y-%m-%d"), event_ms
 
 
+def _write_to_s3(suricata_event, event_dt):
+    """
+    Write raw Suricata event to S3 for long-term storage.
+    Partitioned by date for efficient Athena queries.
+    Path: s3://bucket/year=2026/month=01/day=29/hour=14/event_uuid.json
+    """
+    if not _s3_enabled or not _s3_bucket:
+        return False
+    
+    try:
+        # Partition by date/hour for efficient queries
+        s3_key = (
+            f"year={event_dt.year}/"
+            f"month={event_dt.month:02d}/"
+            f"day={event_dt.day:02d}/"
+            f"hour={event_dt.hour:02d}/"
+            f"{uuid.uuid4().hex}.json"
+        )
+        
+        _s3.put_object(
+            Bucket=_s3_bucket,
+            Key=s3_key,
+            Body=json.dumps(suricata_event),
+            ContentType="application/json",
+            StorageClass="STANDARD"  # Will transition to GLACIER_IR after 30 days
+        )
+        return True
+    except Exception as e:
+        # Don't fail the whole Lambda if S3 write fails
+        print(f"S3 write error: {e}")
+        return False
+
+
 def handler(event, context):
     log_events = _decode_logs(event)
     if not log_events:
@@ -142,6 +180,7 @@ def handler(event, context):
 
     now_ms = int(datetime.datetime.utcnow().timestamp() * 1000)
     items = []
+    s3_writes = 0
 
     for log_event in log_events:
         raw_message = log_event.get("message", "")
@@ -156,6 +195,10 @@ def handler(event, context):
         event_time_for_id = datetime.datetime.utcfromtimestamp(event_ms / 1000)
         event_id = f"{event_time_for_id.strftime('%Y%m%dT%H%M%S.%f')}_{uuid.uuid4().hex[:8]}"
 
+        # Write raw event to S3 (all events)
+        if _write_to_s3(suricata_event, event_time_for_id):
+            s3_writes += 1
+
         item = {
             "event_date": event_date,
             "event_id": event_id,
@@ -169,8 +212,15 @@ def handler(event, context):
 
         items.append(item)
 
+    # Write to DynamoDB (all events - for now)
     with _table.batch_writer(overwrite_by_pkeys=["event_date", "event_id"]) as batch:
         for item in items:
             batch.put_item(Item=item)
 
-    return {"statusCode": 200, "records": len(items)}
+    return {
+        "statusCode": 200, 
+        "records": len(items),
+        "s3_writes": s3_writes,
+        "s3_enabled": _s3_enabled
+    }
+

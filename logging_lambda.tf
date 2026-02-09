@@ -69,6 +69,14 @@ resource "aws_iam_role_policy" "lambda_ingest" {
       {
         Effect = "Allow",
         Action = [
+          "s3:PutObject",
+          "s3:PutObjectAcl"
+        ],
+        Resource = "${aws_s3_bucket.suricata_logs.arn}/*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -97,7 +105,9 @@ resource "aws_lambda_function" "suricata_ingest" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.suricata_events.name
+      TABLE_NAME       = aws_dynamodb_table.suricata_events.name
+      S3_BUCKET_NAME   = aws_s3_bucket.suricata_logs.id
+      ENABLE_S3_BACKUP = "true"  # Feature flag to enable/disable S3 writes
     }
   }
 
