@@ -1,20 +1,13 @@
-# Honeypot MVP Terraform resources (safe defaults).
-# Purpose: resources required to run a single honeypot EC2 instance that ships
-# Suricata `eve.json` to CloudWatch Logs. These resources are intentionally
-# minimal to keep cost low and make the MVP easy to review and test.
-#
-# Ownership / mapping:
-# - Security group (`aws_security_group.honeypot_sg`) belongs to the Honeypot
-#   and allows inbound scan traffic (ports 22 and 80).
-# - IAM role/policy/instance-profile (aws_iam_role.cw_role, aws_iam_role_policy.cw_policy,
-#   aws_iam_instance_profile.cw_profile) belong to the Honeypot EC2 instance and
-#   grant CloudWatch Logs permissions so the CloudWatch Agent can push logs.
-# - EC2 instance (`aws_instance.honeypot`) is the actual honeypot; UserData
-#   installs Suricata and the CloudWatch agent. The instance tags follow the
-#   project/workspace naming convention so resources are easy to find.
-
-// `public_subnet_id` moved to `variables.tf` to centralize variables across the
-// module. This placeholder was removed to avoid duplicate variable declarations.
+# ===========================================================
+#                     PhantomWall Cloud Threat
+#                     Honeypot EC2 Configuration
+# ===========================================================
+# Description: Honeypot EC2 instance running Suricata IDS
+#             Ships eve.json logs to CloudWatch Logs
+# 
+# Naming Convention: phantomwall-{resource}-{environment}
+# Last Updated: 2026-02-08
+# ===========================================================
 
 variable "instance_type" {
   description = "EC2 instance type"
@@ -22,10 +15,7 @@ variable "instance_type" {
   default     = "t3a.small" # Optimized for cost (~$15/month savings) - 2GB RAM sufficient for Suricata
 }
 
-variable "environment" {
-  type    = string
-  default = "dev"
-}
+# Note: environment variable now defined globally in variables.tf
 
 variable "cw_log_group" {
   type    = string
@@ -65,7 +55,7 @@ data "aws_ami" "ubuntu" {
 locals {
   # Helper used for human-friendly resource Name tags. Set `random_name`
   # (middle component) via -var or terraform.tfvars to distinguish resources.
-  twoName = "${var.project_name}-${var.random_name}-${terraform.workspace}"
+  twoName = "${var.project_name}-${var.random_name}-${var.environment}"
 }
 
 # Optional subnet lookup by tag: if `subnet_tag_value` is provided we will
@@ -91,7 +81,7 @@ resource "aws_cloudwatch_log_group" "honeypot_bootstrap" {
 resource "aws_security_group" "honeypot_sg" {
   # Security group for the honeypot. Intentionally permissive for MVP so
   # the instance attracts scans. Tighten only when auto-blocking exists.
-  name        = "${local.resource_name_prefix}-honeypot-sg-${var.environment}"
+  name        = "${var.project_name}-ec2-honeypot-sg-${var.environment}"
   description = "Allow SSH and HTTP for honeypot"
 
   ingress {
@@ -116,8 +106,8 @@ resource "aws_security_group" "honeypot_sg" {
   }
 
   tags = {
-    # Name tag follows the global naming pattern: project-component-workspace
-    Name    = "${local.resource_name_prefix}-honeypot-sg-${var.environment}"
+    # Name tag follows the DarkTracer naming pattern: project-resource-environment
+    Name    = "${var.project_name}-ec2-honeypot-sg-${var.environment}"
     Project = var.project_name != "" ? var.project_name : "phantomwall"
     Env     = var.environment
   }
@@ -127,7 +117,7 @@ resource "aws_security_group" "honeypot_sg" {
 resource "aws_iam_role" "cw_role" {
   # IAM role assumed by the honeypot EC2 instance. Grants the instance
   # permission to push logs to CloudWatch via the CloudWatch Agent.
-  name = "${local.resource_name_prefix}-honeypot-cw-role-${var.environment}"
+  name = "${var.project_name}-ec2-honeypot-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -139,7 +129,7 @@ resource "aws_iam_role" "cw_role" {
   })
   tags = {
     # Tag shows this role belongs to the Honeypot component
-    Name    = "${local.resource_name_prefix}-honeypot-cw-role-${var.environment}"
+    Name    = "${var.project_name}-ec2-honeypot-role-${var.environment}"
     Project = var.project_name != "" ? var.project_name : "phantomwall"
     Env     = var.environment
   }
@@ -183,10 +173,10 @@ resource "aws_iam_role_policy_attachment" "cw_ssm_attach" {
 resource "aws_iam_instance_profile" "cw_profile" {
   # Instance profile to attach the role to the EC2 instance. This is the
   # bridge that allows EC2 to assume the `cw_role` at runtime.
-  name = "${local.resource_name_prefix}-honeypot-profile-${var.environment}"
+  name = "${var.project_name}-ec2-honeypot-profile-${var.environment}"
   role = aws_iam_role.cw_role.name
   tags = {
-    Name    = "${local.resource_name_prefix}-honeypot-profile-${var.environment}"
+    Name    = "${var.project_name}-ec2-honeypot-profile-${var.environment}"
     Project = var.project_name != "" ? var.project_name : "phantomwall"
     Env     = var.environment
   }
@@ -235,7 +225,7 @@ resource "tls_private_key" "generated" {
 
 resource "aws_key_pair" "generated_key" {
   count      = var.create_key_pair ? 1 : 0
-  key_name   = "${var.project_name}-generated-key-${terraform.workspace}"
+  key_name   = "${var.project_name}-ec2-keypair-${var.environment}"
   public_key = tls_private_key.generated[0].public_key_openssh
 }
 

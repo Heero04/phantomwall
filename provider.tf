@@ -1,17 +1,23 @@
-// AWS provider configuration
-// Purpose: central provider definition and default tags applied to all
-// resources in this module. Keep global tags here for cost allocation
-// and resource discovery.
+/*
+================================================================================
+AWS Provider Configuration
+================================================================================
+Purpose: Defines AWS provider settings and default resource tags.
+
+Default Tags: Applied to all resources for cost tracking and organization.
+================================================================================
+*/
+
 provider "aws" {
   region = var.aws_region
 
   default_tags {
     tags = {
-      Project     = "phantomwall-cloud-threat" # Project identifier
-      Environment = terraform.workspace        # Dynamic environment tracking
-      Owner       = "team-engineering"         # Team ownership
-      CostCenter  = "cloud-security"           # Cost tracking
-      Service     = "threat-monitoring"        # Service classification
+      Project     = var.project_name          # Project identifier
+      Environment = var.environment           # Deployment environment
+      Owner       = "team-engineering"        # Team ownership
+      CostCenter  = "cloud-security"          # Cost tracking
+      Service     = "threat-monitoring"       # Service classification
     }
   }
 }

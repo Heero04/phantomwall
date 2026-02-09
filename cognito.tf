@@ -1,31 +1,28 @@
 # ===========================================================
-#                     AWS Cognito User Pool
-#                     Authentication & Authorization
+#                     PhantomWall Cloud Threat
+#                     Cognito Authentication Configuration
 # ===========================================================
 # Description: Implements AWS Cognito for user authentication,
 #             JWT token generation, and API Gateway authorization
 # 
-# Features:
-# - Email/password authentication
-# - Email verification required
-# - Password complexity policies
-# - MFA optional (can enable later)
-# - JWT token-based API authorization
+# Naming Convention: phantomwall-{resource}-{environment}
+# Last Updated: 2026-02-08
 # ===========================================================
 
 # ----------------------------------------------------------
 #            Cognito User Pool
 # ----------------------------------------------------------
 # Purpose: Manages user accounts, authentication, and tokens
+# Naming: phantomwall-cognito-users-dev
 # ----------------------------------------------------------
 
 resource "aws_cognito_user_pool" "phantomwall" {
-  name = "${var.project_name}-user-pool-${terraform.workspace}"
+  name = "${var.project_name}-cognito-users-${var.environment}"
 
   # ----------------------------------------------------------
   # Username & Sign-in Configuration
   # ----------------------------------------------------------
-  alias_attributes = ["email"]
+  # Note: Use either alias_attributes OR username_attributes, not both
   username_attributes = ["email"]
   
   username_configuration {
@@ -138,7 +135,7 @@ resource "aws_cognito_user_pool" "phantomwall" {
   deletion_protection = "ACTIVE"
 
   tags = merge(var.common_tags, {
-    Name = "${var.project_name}-user-pool-${terraform.workspace}"
+    Name = "${var.project_name}-cognito-users-${var.environment}"
   })
 }
 
@@ -146,10 +143,11 @@ resource "aws_cognito_user_pool" "phantomwall" {
 #            Cognito User Pool Client
 # ----------------------------------------------------------
 # Purpose: Frontend app registration for user authentication
+# Naming: phantomwall-cognito-web-client-dev
 # ----------------------------------------------------------
 
 resource "aws_cognito_user_pool_client" "phantomwall_web" {
-  name         = "${var.project_name}-web-client-${terraform.workspace}"
+  name         = "${var.project_name}-cognito-web-client-${var.environment}"
   user_pool_id = aws_cognito_user_pool.phantomwall.id
 
   # ----------------------------------------------------------
@@ -205,7 +203,7 @@ resource "aws_cognito_user_pool_client" "phantomwall_web" {
 # ----------------------------------------------------------
 
 resource "aws_cognito_identity_pool" "phantomwall" {
-  identity_pool_name               = "${var.project_name}_identity_pool_${terraform.workspace}"
+  identity_pool_name               = "${var.project_name}_identity_pool_${var.environment}"
   allow_unauthenticated_identities = false
   allow_classic_flow               = false
 
@@ -216,7 +214,7 @@ resource "aws_cognito_identity_pool" "phantomwall" {
   }
 
   tags = merge(var.common_tags, {
-    Name = "${var.project_name}-identity-pool-${terraform.workspace}"
+    Name = "${var.project_name}-cognito-identity-pool-${var.environment}"
   })
 }
 
@@ -225,7 +223,7 @@ resource "aws_cognito_identity_pool" "phantomwall" {
 # ----------------------------------------------------------
 
 resource "aws_iam_role" "authenticated" {
-  name = "${var.project_name}-cognito-authenticated-${terraform.workspace}"
+  name = "${var.project_name}-cognito-authenticated-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -249,7 +247,7 @@ resource "aws_iam_role" "authenticated" {
   })
 
   tags = merge(var.common_tags, {
-    Name = "${var.project_name}-cognito-authenticated-role-${terraform.workspace}"
+    Name = "${var.project_name}-cognito-authenticated-role-${var.environment}"
   })
 }
 
@@ -285,15 +283,16 @@ resource "aws_cognito_identity_pool_roles_attachment" "main" {
 #            API Gateway Authorizer
 # ----------------------------------------------------------
 # Purpose: Validates JWT tokens from Cognito for API access
+# NOTE: Commented out until REST API Gateway is configured
 # ----------------------------------------------------------
 
-resource "aws_api_gateway_authorizer" "cognito" {
-  name            = "${var.project_name}-cognito-authorizer-${terraform.workspace}"
-  rest_api_id     = aws_api_gateway_rest_api.main.id
-  type            = "COGNITO_USER_POOLS"
-  provider_arns   = [aws_cognito_user_pool.phantomwall.arn]
-  identity_source = "method.request.header.Authorization"
-}
+# resource "aws_api_gateway_authorizer" "cognito" {
+#   name            = "${var.project_name}-cognito-authorizer-${var.environment}"
+#   rest_api_id     = aws_api_gateway_rest_api.main.id
+#   type            = "COGNITO_USER_POOLS"
+#   provider_arns   = [aws_cognito_user_pool.phantomwall.arn]
+#   identity_source = "method.request.header.Authorization"
+# }
 
 # ----------------------------------------------------------
 #            Outputs

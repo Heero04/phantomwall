@@ -1,13 +1,26 @@
-# ===========================================================
-#                     DarkTracer Cloud Threat
-#                     Kali Linux EC2 Configuration
-# ===========================================================
-# Description: Configures EC2 instance running Kali Linux for
-#             security testing and threat analysis within the
-#             DarkTracer environment
-# 
-# Last Updated: 2024-04-19
-# ===========================================================
+/*
+================================================================================
+AWS EC2 Kali Linux Configuration
+================================================================================
+Purpose: Deploys Kali Linux instance for security testing and attack simulation.
+
+Naming Convention: {project-name}-ec2-kali-{resource}-{environment}
+Example: phantomwall-ec2-kali-instance-dev
+
+Features:
+- Kali Linux AMI with pre-installed security tools
+- SSM Session Manager access (no SSH required)
+- IAM instance profile for AWS service access
+- Security group with restricted access
+- Optional SSH key generation
+
+Resources:
+- EC2 instance (t3.micro)
+- Security group with SSH access control
+- IAM role and instance profile for SSM
+- Optional SSH keypair generation
+================================================================================
+*/
 
 # ----------------------------------------------------------
 #                EC2 Instance Configuration
@@ -63,7 +76,7 @@ resource "aws_instance" "kali" {
   EOF
 
   tags = {
-    Name     = "${local.resource_name_prefix}-kali"
+    Name     = "${var.project_name}-ec2-kali-instance-${var.environment}"
     AutoStop = "true"
   }
 }
@@ -81,7 +94,7 @@ resource "aws_instance" "kali" {
 # ----------------------------------------------------------
 
 resource "aws_security_group" "kali_sg" {
-  name        = "${local.resource_name_prefix}-kali-security-group"
+  name        = "${var.project_name}-ec2-kali-sg-${var.environment}"
   description = "Security group for Kali instance"
   # Use the account's default VPC so we don't rely on an aws_vpc resource
   vpc_id = data.aws_vpc.default.id
@@ -103,13 +116,13 @@ resource "aws_security_group" "kali_sg" {
   }
 
   tags = {
-    Name = "${local.resource_name_prefix}-kali-security-group"
+    Name = "${var.project_name}-ec2-kali-sg-${var.environment}"
   }
 }
 
 # IAM role for Kali to allow SSM access
 resource "aws_iam_role" "kali_role" {
-  name = "${local.resource_name_prefix}-kali-ssm-role-${var.environment}"
+  name = "${var.project_name}-ec2-kali-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -127,7 +140,7 @@ resource "aws_iam_role_policy_attachment" "kali_ssm_attach" {
 }
 
 resource "aws_iam_instance_profile" "kali_profile" {
-  name = "${local.resource_name_prefix}-kali-profile-${var.environment}"
+  name = "${var.project_name}-ec2-kali-profile-${var.environment}"
   role = aws_iam_role.kali_role.name
 }
 
@@ -139,7 +152,7 @@ resource "tls_private_key" "kali_generated" {
 
 resource "aws_key_pair" "kali_generated" {
   count      = var.create_kali_key ? 1 : 0
-  key_name   = "${var.project_name}-kali-key-${terraform.workspace}"
+  key_name   = "${var.project_name}-ec2-kali-keypair-${var.environment}"
   public_key = tls_private_key.kali_generated[0].public_key_openssh
 }
 

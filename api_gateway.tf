@@ -1,7 +1,16 @@
-# Public API for the PhantomWall dashboard: surfaces Suricata events stored in DynamoDB.
+# ===========================================================
+#                     PhantomWall Cloud Threat
+#                     API Gateway Configuration
+# ===========================================================
+# Description: Public API for the PhantomWall dashboard
+#             surfaces Suricata events stored in DynamoDB
+# 
+# Naming Convention: phantomwall-{resource}-{environment}
+# Last Updated: 2026-02-08
+# ===========================================================
 
 resource "aws_iam_role" "lambda_api" {
-  name = "${local.resource_name_prefix}-suricata-api-role-${terraform.workspace}"
+  name = "${var.project_name}-lambda-api-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -16,7 +25,7 @@ resource "aws_iam_role" "lambda_api" {
 }
 
 resource "aws_iam_role_policy" "lambda_api" {
-  name = "${local.resource_name_prefix}-suricata-api-policy-${terraform.workspace}"
+  name = "${var.project_name}-lambda-api-policy-${var.environment}"
   role = aws_iam_role.lambda_api.id
 
   policy = jsonencode({
@@ -50,7 +59,7 @@ data "archive_file" "suricata_api" {
 }
 
 resource "aws_lambda_function" "suricata_api" {
-  function_name    = "${var.project_name}-${terraform.workspace}-suricata-api"
+  function_name    = "${var.project_name}-lambda-suricata-api-${var.environment}"
   role             = aws_iam_role.lambda_api.arn
   handler          = "handler.handler"
   runtime          = "python3.11"
@@ -67,7 +76,7 @@ resource "aws_lambda_function" "suricata_api" {
 
   tags = {
     Project = var.project_name
-    Env     = terraform.workspace
+    Env     = var.environment
   }
 }
 
@@ -77,7 +86,7 @@ resource "aws_cloudwatch_log_group" "suricata_api" {
 }
 
 resource "aws_apigatewayv2_api" "suricata" {
-  name          = "${var.project_name}-${terraform.workspace}-suricata-api"
+  name          = "${var.project_name}-api-gateway-${var.environment}"
   protocol_type = "HTTP"
 
   cors_configuration {
@@ -106,7 +115,7 @@ resource "aws_apigatewayv2_stage" "suricata" {
 }
 
 resource "aws_cloudwatch_log_group" "api_gw_logs" {
-  name              = "/aws/apigateway/${var.project_name}-${terraform.workspace}-suricata-api"
+  name              = "/aws/lambda/${aws_lambda_function.suricata_api.function_name}"
   retention_in_days = 7  # Reduced from 14 days for cost optimization
 }
 

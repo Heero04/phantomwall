@@ -1,9 +1,24 @@
-# AWS Budget Alerts for PhantomWall
-# Monitors monthly costs and sends email notifications at thresholds
+/*
+================================================================================
+AWS Budget Alerts Configuration
+================================================================================
+Purpose: Monitors AWS costs and sends email notifications at defined thresholds.
+
+Naming Convention: {project-name}-budget-{resource}-{environment}
+Example: phantomwall-budget-monthly-dev
+
+Resources:
+- Monthly budget with tiered alerts ($30, $50, $75)
+- Daily anomaly detection monitor
+- Cost anomaly subscription alerts
+
+Security: Email notifications sent to configured budget_alert_email variable.
+================================================================================
+*/
 
 # Budget with multiple alert thresholds
 resource "aws_budgets_budget" "phantomwall_monthly" {
-  name              = "phantomwall-monthly-budget"
+  name              = "${var.project_name}-budget-monthly-${var.environment}"
   budget_type       = "COST"
   limit_amount      = "75"
   limit_unit        = "USD"
@@ -60,29 +75,29 @@ resource "aws_budgets_budget" "phantomwall_monthly" {
   }
 
   tags = {
-    Name        = "PhantomWall Monthly Budget"
-    Environment = terraform.workspace
-    Project     = "PhantomWall"
+    Name        = "${var.project_name}-budget-monthly-${var.environment}"
+    Environment = var.environment
+    Project     = var.project_name
     ManagedBy   = "Terraform"
   }
 }
 
 # Optional: Daily cost anomaly detection
 resource "aws_ce_anomaly_monitor" "phantomwall_daily" {
-  name              = "phantomwall-daily-anomaly-monitor"
+  name              = "${var.project_name}-budget-anomaly-monitor-${var.environment}"
   monitor_type      = "DIMENSIONAL"
   monitor_dimension = "SERVICE"
 
   tags = {
-    Name        = "PhantomWall Anomaly Monitor"
-    Environment = terraform.workspace
-    Project     = "PhantomWall"
+    Name        = "${var.project_name}-budget-anomaly-monitor-${var.environment}"
+    Environment = var.environment
+    Project     = var.project_name
     ManagedBy   = "Terraform"
   }
 }
 
 resource "aws_ce_anomaly_subscription" "phantomwall_anomaly_alerts" {
-  name      = "phantomwall-anomaly-subscription"
+  name      = "${var.project_name}-budget-anomaly-subscription-${var.environment}"
   threshold_expression {
     dimension {
       key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"

@@ -17,6 +17,12 @@ import ReactTerminal from './components/ReactTerminal'
 import PhantomWallTerminal from './components/PhantomWallTerminal'
 import SimpleTerminalTest from './components/SimpleTerminalTest'
 import ChatAssistant from './ChatAssistant'
+// Auth Components
+import { MockAuthProvider } from './contexts/MockAuthContext'
+import Login from './components/Login'
+import Signup from './components/Signup'
+import VerifyEmail from './components/VerifyEmail'
+import ForgotPassword from './components/ForgotPassword'
 import { ProSidebarProvider, Sidebar, Menu, MenuItem } from 'react-pro-sidebar'
 
 const NAV_ITEMS = [

@@ -1,12 +1,20 @@
-# S3 bucket for raw Suricata logs - cost-optimized storage
-# Purpose: Store ALL logs long-term at 90% lower cost than DynamoDB
+# ===========================================================
+#                     PhantomWall Cloud Threat
+#                     S3 Logs Configuration
+# ===========================================================
+# Description: S3 bucket for raw Suricata logs
+#             Cost-optimized storage for ALL logs long-term
+# 
+# Naming Convention: phantomwall-{resource}-{environment}
+# Last Updated: 2026-02-08
+# ===========================================================
 
 resource "aws_s3_bucket" "suricata_logs" {
-  bucket = "${var.project_name}-${terraform.workspace}-suricata-logs"
+  bucket = "${var.project_name}-s3-logs-${var.environment}"
 
   tags = {
     Project = var.project_name
-    Env     = terraform.workspace
+    Env     = var.environment
     Service = "suricata-logs"
   }
 }
@@ -40,7 +48,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "suricata_logs" {
     id     = "archive-old-logs"
     status = "Enabled"
 
-    filter {}  # Apply to all objects
+    # Empty filter applies to all objects - using proper syntax for newer provider versions
+    filter {
+      prefix = ""
+    }
 
     transition {
       days          = 30
@@ -58,7 +69,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "suricata_logs" {
     id     = "cleanup-incomplete-uploads"
     status = "Enabled"
 
-    filter {}  # Apply to all objects
+    # Empty filter applies to all objects - using proper syntax for newer provider versions
+    filter {
+      prefix = ""
+    }
 
     abort_incomplete_multipart_upload {
       days_after_initiation = 7

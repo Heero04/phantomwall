@@ -1,5 +1,16 @@
+# ===========================================================
+#                     PhantomWall Cloud Threat
+#                     Bedrock Chat Configuration
+# ===========================================================
+# Description: AWS Bedrock-powered chat assistant for
+#             security analysis and threat intelligence
+# 
+# Naming Convention: phantomwall-{resource}-{environment}
+# Last Updated: 2026-02-08
+# ===========================================================
+
 resource "aws_iam_role" "lambda_chat" {
-  name = "${local.resource_name_prefix}-suricata-chat-role-${terraform.workspace}"
+  name = "${var.project_name}-lambda-chat-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
@@ -14,7 +25,7 @@ resource "aws_iam_role" "lambda_chat" {
 }
 
 resource "aws_iam_role_policy" "lambda_chat" {
-  name = "${local.resource_name_prefix}-suricata-chat-policy-${terraform.workspace}"
+  name = "${var.project_name}-lambda-chat-policy-${var.environment}"
   role = aws_iam_role.lambda_chat.id
 
   policy = jsonencode({
@@ -53,7 +64,7 @@ data "archive_file" "chat_lambda" {
 }
 
 resource "aws_lambda_function" "suricata_chat" {
-  function_name    = "${var.project_name}-${terraform.workspace}-suricata-chat"
+  function_name    = "${var.project_name}-lambda-bedrock-chat-${var.environment}"
   role             = aws_iam_role.lambda_chat.arn
   handler          = "handler.handler"
   runtime          = "python3.11"
@@ -72,7 +83,7 @@ resource "aws_lambda_function" "suricata_chat" {
 
   tags = {
     Project = var.project_name
-    Env     = terraform.workspace
+    Env     = var.environment
   }
 }
 

@@ -1,6 +1,20 @@
+/*
+================================================================================
+AWS Amplify IAM Service Role Configuration
+================================================================================
+Purpose: Defines IAM role for AWS Amplify Console to deploy frontend resources.
+
+Naming Convention: {project-name}-amplify-role-{environment}
+Example: phantomwall-amplify-role-dev
+
+Security: Role allows Amplify to assume identity and perform build/deployment
+operations with attached policies.
+================================================================================
+*/
+
 // IAM role for AWS Amplify Console to assume when deploying the frontend
 resource "aws_iam_role" "amplify_console" {
-  name = "${var.project_name}-amplify-service-role-${terraform.workspace}"
+  name = "${var.project_name}-amplify-role-${var.environment}"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

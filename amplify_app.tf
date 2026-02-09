@@ -23,7 +23,7 @@ variable "amplify_branch" {
 
 resource "aws_amplify_app" "frontend" {
   count                = var.amplify_repo != "" ? 1 : 0
-  name                 = "${var.project_name}-frontend-${terraform.workspace}"
+  name                 = "${var.project_name}-amplify-frontend-${var.environment}"
   repository           = var.amplify_repo
   platform             = "WEB"
   iam_service_role_arn = aws_iam_role.amplify_console.arn
