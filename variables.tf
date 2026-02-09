@@ -151,3 +151,17 @@ variable "chat_max_items" {
   type        = number
   default     = 25
 }
+
+# ----------------------------------------------------------
+#            Budget Alert Configuration
+# ----------------------------------------------------------
+# Purpose: Email address for AWS budget and cost anomaly alerts
+# Type: Required input
+# Usage: Receives notifications at $30, $50, and $75 thresholds
+# ----------------------------------------------------------
+
+variable "budget_alert_email" {
+  description = "Email address to receive AWS budget alerts"
+  type        = string
+  default     = ""
+}

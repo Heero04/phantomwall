@@ -8,3 +8,6 @@ environment      = "dev"
 create_key_pair   = false
 # If create_key_pair = true, set a local path where the private key will be written
 # key_private_key_path = "./phantomwall_honeypot_key.pem"
+
+# AWS Budget Alerts
+budget_alert_email = "your-email@example.com"
