@@ -49,15 +49,22 @@ gitleaks
 gitleaks.tar.gz
 gitleaks-linux-arm64.tar.gz
 
-# key files
-# These files may contain sensitive information and should be kept private
-# and not shared in version control.
-# Make sure to replace these with your actual key file names
-# and paths as needed.
+# key files — NEVER commit private keys
+# These files contain sensitive information and must NOT be in version control.
+*.pem
 kali-key
 kali-key.pub
 kali.sh
 phantomwall-keypair.pem
+phantomwall_honeypot_key.pem
+phantomwall_kali_key.pem
+
+# Lambda deployment zips (binary artifacts, rebuilt by Terraform)
+lambda/*.zip
+lambda/**/*.zip
+
+# Temporary/cleanup artifacts
+delobj.json
 
 # Ignore any other files or directories that are not relevant to the project
 modules/

@@ -36,7 +36,36 @@ The platform leverages Suricata IDS, AWS Lambda, DynamoDB, and API Gateway to cr
 - **AI-Powered Analysis** - AWS Bedrock integration for intelligent threat summaries and security insights
 - **Security Scanning** - Automated GitHub Actions workflow to prevent credential leaks
 - **Infrastructure as Code** - Complete Terraform deployment with modular, reusable components
-- **Multi-environment Support** - Workspace-based deployment for dev/staging/prod environments
+- **Multi-environment Support** - Variable-based deployment for dev/staging/prod environments with standardized naming conventions
+
+---
+
+## Naming Convention
+
+PhantomWall follows the **DarkTracer naming standard** for consistent, professional resource naming across all AWS infrastructure:
+
+### **Pattern:**
+```
+{project-name}-{resource-type}-{environment}
+```
+
+### **Examples:**
+- `phantomwall-lambda-api-role-dev` - IAM role for API Lambda in dev
+- `phantomwall-ec2-honeypot-sg-prod` - Security group for honeypot in production
+- `phantomwall-dynamodb-events-staging` - DynamoDB table in staging
+- `phantomwall-budget-monthly-dev` - AWS Budget for dev environment
+
+### **Environment Values:**
+- `dev` - Development environment
+- `staging` - Staging/testing environment
+- `prod` - Production environment
+
+### **Benefits:**
+- ✅ Consistent naming across all AWS resources
+- ✅ Easy identification of resource purpose and environment
+- ✅ Professional appearance in AWS Console
+- ✅ Simplified cost tracking and resource management
+- ✅ Portfolio-ready infrastructure for recruiters
 
 ---
 
@@ -130,10 +159,12 @@ aws configure
 ```bash
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your configuration:
-# - aws_region
-# - project_name
+# - aws_region (e.g., "us-east-1")
+# - project_name (e.g., "phantomwall")
+# - environment (e.g., "dev", "staging", or "prod")
 # - subnet_tag_value (or public_subnet_id)
 # - amplify_repo (optional, for frontend deployment)
+# - budget_alert_email (for cost monitoring)
 ```
 
 ### 4. Initialize Terraform
@@ -143,16 +174,32 @@ terraform init
 
 ### 5. Review Deployment Plan
 ```bash
-terraform plan
+# For development environment
+terraform plan -var="environment=dev"
+
+# For production environment
+terraform plan -var="environment=prod"
 ```
 
 ### 6. Deploy Infrastructure
 ```bash
-terraform apply
-# Type 'yes' to confirm deployment
+# Deploy to development
+terraform apply -var="environment=dev" -auto-approve
+
+# Deploy to production
+terraform apply -var="environment=prod" -auto-approve
 ```
 
-### 7. Deploy Frontend (Optional)
+### 7. Destroy Infrastructure (when needed)
+```bash
+# Destroy development environment
+terraform destroy -var="environment=dev" -auto-approve
+
+# Destroy production environment
+terraform destroy -var="environment=prod" -auto-approve
+```
+
+### 8. Deploy Frontend (Optional)
 ```bash
 cd frontend
 npm install

@@ -17,6 +17,8 @@ import ReactTerminal from './components/ReactTerminal'
 import PhantomWallTerminal from './components/PhantomWallTerminal'
 import SimpleTerminalTest from './components/SimpleTerminalTest'
 import ChatAssistant from './ChatAssistant'
+import LogViewer from './LogViewer'
+import SSMCommands from './SSMCommands'
 // Auth Components
 import { MockAuthProvider } from './contexts/MockAuthContext'
 import Login from './components/Login'
@@ -132,6 +134,28 @@ const NAV_ITEMS = [
         <path d="M12 9v4l2 2" />
         <path d="M21 12c0 1.1-.1 2.2-.3 3.3l-1.8-.6c.1-.9.1-1.8.1-2.7 0-4.4-3.6-8-8-8s-8 3.6-8 8c0 .9 0 1.8.1 2.7l-1.8.6C3.1 14.2 3 13.1 3 12c0-5 4-9 9-9s9 4 9 9Z" />
         <path d="M12 7v6l1.5 1.5" />
+      </svg>
+    ),
+  },
+  {
+    key: 'logs',
+    label: 'S3 Log Explorer',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
       </svg>
     ),
   },
@@ -355,6 +379,50 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  {
+    key: 'logs',
+    label: 'S3 Log Viewer',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'ssm',
+    label: 'SSM Commands',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="M2 17l10 5 10-5"/>
+        <path d="M2 12l10 5 10-5"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function App() {
@@ -448,6 +516,10 @@ export default function App() {
           )}
 
           {activePage === 'alerts' && <AlertsPage />}
+
+          {activePage === 'logs' && <LogViewer />}
+
+          {activePage === 'ssm' && <SSMCommands />}
 
           {activePage === 'dashboardv2' && <DashboardV2 />}
 

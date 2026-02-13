@@ -181,6 +181,24 @@ def handler(event, context):
     now_ms = int(datetime.datetime.utcnow().timestamp() * 1000)
     items = []
     s3_writes = 0
+    s3_total = 0
+
+    # -------------------------------------------------------
+    # Cost Optimization: Only alerts go to DynamoDB
+    # -------------------------------------------------------
+    # DynamoDB charges per write + per GB stored.
+    # Suricata generates thousands of flow/stats/dns events
+    # but only a fraction are actual alerts (threats).
+    #
+    # Strategy:
+    #   ALL events  → S3 (cheap: ~$0.023/GB/month)
+    #   ALERTS ONLY → DynamoDB (fast queries for dashboard)
+    #
+    # To review all logs, query S3 directly or use Athena.
+    # -------------------------------------------------------
+
+    # Event types we consider alerts (written to DynamoDB)
+    ALERT_EVENT_TYPES = {"alert", "anomaly", "drop"}
 
     for log_event in log_events:
         raw_message = log_event.get("message", "")
@@ -195,31 +213,39 @@ def handler(event, context):
         event_time_for_id = datetime.datetime.utcfromtimestamp(event_ms / 1000)
         event_id = f"{event_time_for_id.strftime('%Y%m%dT%H%M%S.%f')}_{uuid.uuid4().hex[:8]}"
 
-        # Write raw event to S3 (all events)
+        # Write ALL events to S3 (cheap long-term storage)
+        s3_total += 1
         if _write_to_s3(suricata_event, event_time_for_id):
             s3_writes += 1
 
-        item = {
-            "event_date": event_date,
-            "event_id": event_id,
-            "ingest_time": now_ms,
-            "suricata": suricata_event,
-        }
+        # Only write ALERTS to DynamoDB (cost optimization)
+        event_type = suricata_event.get("event_type", "")
+        has_alert_data = suricata_event.get("alert") is not None
 
-        for key, value in normalized.items():
-            if value is not None:
-                item[key] = value
+        if event_type in ALERT_EVENT_TYPES or has_alert_data:
+            item = {
+                "event_date": event_date,
+                "event_id": event_id,
+                "ingest_time": now_ms,
+                "suricata": suricata_event,
+            }
 
-        items.append(item)
+            for key, value in normalized.items():
+                if value is not None:
+                    item[key] = value
 
-    # Write to DynamoDB (all events - for now)
-    with _table.batch_writer(overwrite_by_pkeys=["event_date", "event_id"]) as batch:
-        for item in items:
-            batch.put_item(Item=item)
+            items.append(item)
+
+    # Write alerts to DynamoDB
+    if items:
+        with _table.batch_writer(overwrite_by_pkeys=["event_date", "event_id"]) as batch:
+            for item in items:
+                batch.put_item(Item=item)
 
     return {
         "statusCode": 200, 
-        "records": len(items),
+        "dynamodb_alerts": len(items),
+        "s3_total": s3_total,
         "s3_writes": s3_writes,
         "s3_enabled": _s3_enabled
     }

@@ -17,7 +17,9 @@ Security: Email notifications sent to configured budget_alert_email variable.
 */
 
 # Budget with multiple alert thresholds
+# Only created when budget_alert_email is configured
 resource "aws_budgets_budget" "phantomwall_monthly" {
+  count             = var.budget_alert_email != "" ? 1 : 0
   name              = "${var.project_name}-budget-monthly-${var.environment}"
   budget_type       = "COST"
   limit_amount      = "75"
@@ -82,53 +84,20 @@ resource "aws_budgets_budget" "phantomwall_monthly" {
   }
 }
 
-# Optional: Daily cost anomaly detection
-resource "aws_ce_anomaly_monitor" "phantomwall_daily" {
-  name              = "${var.project_name}-budget-anomaly-monitor-${var.environment}"
-  monitor_type      = "DIMENSIONAL"
-  monitor_dimension = "SERVICE"
-
-  tags = {
-    Name        = "${var.project_name}-budget-anomaly-monitor-${var.environment}"
-    Environment = var.environment
-    Project     = var.project_name
-    ManagedBy   = "Terraform"
-  }
-}
-
-resource "aws_ce_anomaly_subscription" "phantomwall_anomaly_alerts" {
-  name      = "${var.project_name}-budget-anomaly-subscription-${var.environment}"
-  threshold_expression {
-    dimension {
-      key           = "ANOMALY_TOTAL_IMPACT_ABSOLUTE"
-      values        = ["10"] # Alert if anomaly costs exceed $10
-      match_options = ["GREATER_THAN_OR_EQUAL"]
-    }
-  }
-
-  frequency = "DAILY"
-
-  subscriber {
-    type    = "EMAIL"
-    address = var.budget_alert_email
-  }
-
-  monitor_arn_list = [
-    aws_ce_anomaly_monitor.phantomwall_daily.arn
-  ]
-
-  depends_on = [aws_ce_anomaly_monitor.phantomwall_daily]
-}
+# Note: AWS Cost Anomaly Detection is not created here because AWS accounts
+# already have a default DIMENSIONAL monitor, and only one is allowed.
+# The budget alerts above ($30/$50/$75 thresholds) provide sufficient cost monitoring.
+# You can configure additional anomaly detection in the AWS Console if needed.
 
 # Outputs
 output "budget_name" {
   description = "Name of the AWS Budget"
-  value       = aws_budgets_budget.phantomwall_monthly.name
+  value       = var.budget_alert_email != "" ? aws_budgets_budget.phantomwall_monthly[0].name : "not configured"
 }
 
 output "budget_limit" {
   description = "Monthly budget limit in USD"
-  value       = "${aws_budgets_budget.phantomwall_monthly.limit_amount} ${aws_budgets_budget.phantomwall_monthly.limit_unit}"
+  value       = var.budget_alert_email != "" ? "${aws_budgets_budget.phantomwall_monthly[0].limit_amount} ${aws_budgets_budget.phantomwall_monthly[0].limit_unit}" : "not configured"
 }
 
 output "budget_alert_thresholds" {

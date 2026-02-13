@@ -76,8 +76,8 @@ resource "aws_instance" "kali" {
   EOF
 
   tags = {
-    Name     = "${var.project_name}-ec2-kali-instance-${var.environment}"
-    AutoStop = "true"
+    Name = "${var.project_name}-ec2-kali-instance-${var.environment}"
+    # AutoStop tag removed - keep instance running during testing
   }
 }
 

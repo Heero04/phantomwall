@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './AlertsTable.css';
 
+const API_URL = import.meta.env.VITE_SURICATA_API_URL;
+
 const AlertsTable = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,43 +14,6 @@ const AlertsTable = () => {
     alertType: 'all'
   });
 
-  // Mock data for development - replace with actual API call
-  const mockAlerts = [
-    {
-      id: '1',
-      timestamp: '2025-10-14T10:30:00Z',
-      severity: 1,
-      sourceIP: '192.168.1.100',
-      destIP: '10.0.0.5',
-      signature: 'ET TROJAN Suspicious Outbound Connection',
-      category: 'trojan',
-      action: 'blocked',
-      flow_id: 12345
-    },
-    {
-      id: '2',
-      timestamp: '2025-10-14T10:25:00Z',
-      severity: 2,
-      sourceIP: '203.0.113.45',
-      destIP: '10.0.0.5',
-      signature: 'ET SCAN Port Scan Detected',
-      category: 'scan',
-      action: 'alerted',
-      flow_id: 12346
-    },
-    {
-      id: '3',
-      timestamp: '2025-10-14T10:20:00Z',
-      severity: 3,
-      sourceIP: '198.51.100.22',
-      destIP: '10.0.0.8',
-      signature: 'ET INFO Generic HTTP Request',
-      category: 'info',
-      action: 'logged',
-      flow_id: 12347
-    }
-  ];
-
   useEffect(() => {
     fetchAlerts();
     const interval = setInterval(fetchAlerts, 30000); // Refresh every 30 seconds
@@ -58,16 +23,46 @@ const AlertsTable = () => {
   const fetchAlerts = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call to your backend
-      // const response = await fetch('/api/alerts?' + new URLSearchParams(filters));
-      // const data = await response.json();
-      
-      // For now, using mock data
-      const filteredData = filterAlerts(mockAlerts);
+      if (!API_URL) {
+        setError('API URL not configured. Set VITE_SURICATA_API_URL in .env');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/events`);
+      const data = await response.json();
+
+      // Flatten the API response — items may be nested under date groups
+      let allItems = [];
+      if (data.items) {
+        allItems = data.items;
+      } else if (Array.isArray(data)) {
+        allItems = data;
+      } else if (data.event_date) {
+        // Single date group response
+        allItems = data.items || [];
+      }
+
+      // Map API fields to AlertsTable expected shape
+      const mapped = allItems.map(item => ({
+        id: item.event_id || item.flow_id?.toString() || Math.random().toString(),
+        timestamp: item.event_time || item.suricata?.timestamp || '',
+        severity: item.severity || item.suricata?.alert?.severity || 3,
+        sourceIP: item.src_ip || item.suricata?.src_ip || '',
+        destIP: item.dest_ip || item.suricata?.dest_ip || '',
+        signature: item.signature || item.suricata?.alert?.signature || 'Unknown',
+        category: item.category || item.suricata?.alert?.category || 'unknown',
+        action: item.suricata?.alert?.action || 'alerted',
+        flow_id: item.flow_id || 0,
+        proto: item.proto || item.suricata?.proto || '',
+        src_port: item.src_port || item.suricata?.src_port || 0,
+        dest_port: item.dest_port || item.suricata?.dest_port || 0,
+      }));
+
+      const filteredData = filterAlerts(mapped);
       setAlerts(filteredData);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch alerts');
+      setError('Failed to fetch alerts: ' + err.message);
       console.error('Error fetching alerts:', err);
     } finally {
       setLoading(false);
