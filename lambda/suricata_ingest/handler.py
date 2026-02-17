@@ -4,6 +4,8 @@ import gzip
 import json
 import os
 import uuid
+from urllib import request, error
+from urllib.parse import quote
 
 import boto3
 
@@ -14,6 +16,79 @@ _table = _dynamodb.Table(os.environ["TABLE_NAME"])
 _s3 = boto3.client("s3")
 _s3_bucket = os.environ.get("S3_BUCKET_NAME")
 _s3_enabled = os.environ.get("ENABLE_S3_BACKUP", "false").lower() == "true"
+
+# GeoIP cache (persists across invocations in same Lambda container)
+_geo_cache = {}
+
+
+def _is_private_ip(ip):
+    """Check if IP is private/local (RFC1918, loopback, link-local)."""
+    if not ip:
+        return True
+    try:
+        parts = [int(x) for x in ip.split('.')]
+        if len(parts) != 4:
+            return True
+        # 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16
+        if parts[0] == 10:
+            return True
+        if parts[0] == 172 and 16 <= parts[1] <= 31:
+            return True
+        if parts[0] == 192 and parts[1] == 168:
+            return True
+        if parts[0] == 127:
+            return True
+        if parts[0] == 169 and parts[1] == 254:
+            return True
+        return False
+    except (ValueError, IndexError):
+        return True
+
+
+def _enrich_geo(ip):
+    """
+    Enrich IP with country metadata using ip-api.com (free, no key needed).
+    Returns: {"country_name": "United States", "country_code": "US", "flag": "🇺🇸"}
+    Fallback: {"country_name": "Unknown", "country_code": None, "flag": "🌐"}
+    """
+    if not ip or _is_private_ip(ip):
+        return {"country_name": "Private Network", "country_code": None, "flag": "🏠"}
+    
+    # Check cache first
+    if ip in _geo_cache:
+        return _geo_cache[ip]
+    
+    try:
+        # Free tier: 45 requests/min (Lambda cold starts reduce this)
+        url = f"http://ip-api.com/json/{quote(ip)}?fields=status,country,countryCode"
+        req = request.Request(url, headers={"User-Agent": "PhantomWall/1.0"})
+        
+        with request.urlopen(req, timeout=2) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            
+            if data.get("status") == "success":
+                country_name = data.get("country", "Unknown")
+                country_code = data.get("countryCode")
+                
+                # Generate flag emoji from country code (Unicode regional indicators)
+                flag = "🌐"
+                if country_code and len(country_code) == 2:
+                    flag = "".join(chr(0x1F1E6 + ord(c) - ord('A')) for c in country_code.upper())
+                
+                result = {
+                    "country_name": country_name,
+                    "country_code": country_code,
+                    "flag": flag
+                }
+                _geo_cache[ip] = result
+                return result
+    except (error.URLError, error.HTTPError, json.JSONDecodeError, TimeoutError) as e:
+        print(f"GeoIP lookup failed for {ip}: {e}")
+    
+    # Fallback
+    fallback = {"country_name": "Unknown", "country_code": None, "flag": "🌐"}
+    _geo_cache[ip] = fallback
+    return fallback
 
 
 def _decode_logs(event):
@@ -92,6 +167,9 @@ def _normalize_event(raw_event, fallback_ms):
     severity = _safe_int(alert.get("severity"))
     category = alert.get("category")
 
+    # Enrich source IP with country metadata
+    src_geo = _enrich_geo(src_ip)
+
     normalized = {
         "event_time": event_dt.isoformat().replace("+00:00", "Z"),
         "timestamp": event_ms,
@@ -106,6 +184,10 @@ def _normalize_event(raw_event, fallback_ms):
         "category": category,
         "signature": signature if isinstance(signature, str) else None,
         "signature_id": _safe_int(alert.get("signature_id")) if not isinstance(signature, str) else None,
+        # GeoIP enrichment
+        "country_name": src_geo["country_name"],
+        "country_code": src_geo["country_code"],
+        "flag": src_geo["flag"],
     }
 
     flow_info = raw_event.get("flow") or {}

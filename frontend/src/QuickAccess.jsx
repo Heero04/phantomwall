@@ -1,9 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles.css';
+
+const API_URL = import.meta.env.VITE_SURICATA_API_URL;
 
 const QuickAccess = () => {
   const [honeypotStatus, setHoneypotStatus] = useState('running');
   const [isStarting, setIsStarting] = useState(false);
+  const [alerts, setAlerts] = useState([]);
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch real data from API
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      if (!API_URL) {
+        console.warn('API URL not configured');
+        return;
+      }
+
+      // Fetch alerts and metrics in parallel
+      const [alertsRes, metricsRes] = await Promise.all([
+        fetch(`${API_URL}/events`),
+        fetch(`${API_URL}/metrics`)
+      ]);
+
+      if (alertsRes.ok) {
+        const alertsData = await alertsRes.json();
+        setAlerts(alertsData.items || []);
+      }
+
+      if (metricsRes.ok) {
+        const metricsData = await metricsRes.json();
+        setMetrics(metricsData);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate stats from real data
+  const stats = {
+    todayAttacks: alerts.length || 0,
+    uniqueIPs: new Set(alerts.map(a => a.src_ip)).size || 0,
+    topThreat: alerts[0]?.signature || 'No threats detected'
+  };
+
+  // Get recent alerts (top 3)
+  const recentAlerts = alerts.slice(0, 3).map(alert => ({
+    id: alert.event_id,
+    type: alert.signature || alert.category || 'Unknown',
+    sourceIp: alert.src_ip || 'Unknown',
+    severity: alert.severity === 1 ? 'critical' : alert.severity === 2 ? 'warning' : 'info',
+    timestamp: formatTimestamp(alert.event_time)
+  }));
+
+  // Calculate top origins from real data
+  const topOrigins = calculateTopOrigins(alerts);
 
   // Fleet Status
   const fleetData = {
@@ -33,43 +93,51 @@ const QuickAccess = () => {
     setIsStarting(false);
   };
 
-  const stats = {
-    todayAttacks: 247,
-    uniqueIPs: 68,
-    topThreat: 'SSH Brute Force'
-  };
+  function formatTimestamp(timestamp) {
+    if (!timestamp) return 'Unknown';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+  }
 
-  const recentAlerts = [
-    {
-      id: 1,
-      type: 'SSH Brute Force',
-      sourceIp: '192.168.1.45',
-      severity: 'critical',
-      timestamp: '2 minutes ago'
-    },
-    {
-      id: 2,
-      type: 'Port Scan',
-      sourceIp: '10.0.0.23',
-      severity: 'warning',
-      timestamp: '5 minutes ago'
-    },
-    {
-      id: 3,
-      type: 'HTTP Probe',
-      sourceIp: '172.16.0.8',
-      severity: 'info',
-      timestamp: '8 minutes ago'
-    }
-  ];
+  function calculateTopOrigins(alerts) {
+    // Group by country (with IP fallback for missing data)
+    const countryCounts = {};
+    
+    alerts.forEach(alert => {
+      // Prefer country_name from enriched data, fallback to IP
+      const country = alert.country_name || alert.src_ip || 'Unknown';
+      const flag = alert.flag || '🌐';
+      
+      if (!countryCounts[country]) {
+        countryCounts[country] = { count: 0, flag };
+      }
+      countryCounts[country].count += 1;
+    });
 
-  const topOrigins = [
-    { country: 'China', flag: '🔴', attacks: 89, percentage: 89 },
-    { country: 'Russia', flag: '⚪', attacks: 67, percentage: 67 },
-    { country: 'North Korea', flag: '⭐', attacks: 45, percentage: 45 },
-    { country: 'Iran', flag: '🟢', attacks: 32, percentage: 32 },
-    { country: 'Brazil', flag: '🟡', attacks: 14, percentage: 14 }
-  ];
+    // Convert to array and sort by count
+    const sorted = Object.entries(countryCounts)
+      .map(([country, data]) => ({ country, count: data.count, flag: data.flag }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Calculate percentages
+    const maxCount = sorted[0]?.count || 1;
+    return sorted.map(({ country, count, flag }) => ({
+      country,
+      flag,
+      attacks: count,
+      percentage: Math.round((count / maxCount) * 100)
+    }));
+  }
 
   const getSeverityColor = (severity) => {
     switch (severity) {
