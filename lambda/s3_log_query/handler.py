@@ -22,16 +22,24 @@ Cost: Athena charges ~$5/TB scanned. Partition pruning keeps costs minimal.
 import datetime
 import json
 import os
+import re
 import time
+import urllib.request
 
 import boto3
 
 _athena = boto3.client("athena")
+_glue = boto3.client("glue")
+_s3 = boto3.client("s3")
 
 DATABASE = os.environ["ATHENA_DATABASE"]
 TABLE = os.environ["ATHENA_TABLE"]
 WORKGROUP = os.environ["ATHENA_WORKGROUP"]
 RESULTS_BUCKET = os.environ["RESULTS_BUCKET"]
+S3_BUCKET = os.environ.get("S3_BUCKET", "")
+
+# ── GeoIP Cache (in-memory, per Lambda container) ──
+_geo_cache = {}
 
 
 def _response(status_code, body):
@@ -197,24 +205,164 @@ def _get_event_type_summary(params):
 
 
 def _repair_partitions():
-    """Run MSCK REPAIR TABLE to discover new S3 partitions."""
+    """Register S3 partitions in Glue using the Glue API.
+
+    Athena Engine v3 (Trino) does NOT support MSCK REPAIR TABLE.
+    Instead, list S3 prefixes and call Glue batch_create_partition.
+    """
+    if not S3_BUCKET:
+        print("Partition repair skipped: S3_BUCKET not set")
+        return
+
     try:
-        repair_query = f'MSCK REPAIR TABLE "{DATABASE}"."{TABLE}"'
-        resp = _athena.start_query_execution(
-            QueryString=repair_query,
-            WorkGroup=WORKGROUP,
+        # Get existing partitions from Glue
+        existing = set()
+        paginator = _glue.get_paginator("get_partitions")
+        for page in paginator.paginate(DatabaseName=DATABASE, TableName=TABLE):
+            for p in page.get("Partitions", []):
+                existing.add(tuple(p["Values"]))
+
+        # Get table storage descriptor (needed for creating partitions)
+        table_info = _glue.get_table(DatabaseName=DATABASE, Name=TABLE)
+        sd = table_info["Table"]["StorageDescriptor"]
+
+        # Discover S3 partition prefixes: year=YYYY/month=MM/day=DD/hour=HH/
+        partition_pattern = re.compile(
+            r"year=(\d{4})/month=(\d{2})/day=(\d{2})/hour=(\d{2})/"
         )
-        # Wait up to 10 seconds for repair
-        qid = resp["QueryExecutionId"]
-        for _ in range(10):
-            status = _athena.get_query_execution(QueryExecutionId=qid)
-            state = status["QueryExecution"]["Status"]["State"]
-            if state in ("SUCCEEDED", "FAILED", "CANCELLED"):
-                break
-            time.sleep(1)
-        print(f"Partition repair: {state}")
+
+        new_partitions = []
+        # List year prefixes
+        years_resp = _s3.list_objects_v2(
+            Bucket=S3_BUCKET, Prefix="year=", Delimiter="/"
+        )
+        for year_prefix in [p["Prefix"] for p in years_resp.get("CommonPrefixes", [])]:
+            months_resp = _s3.list_objects_v2(
+                Bucket=S3_BUCKET, Prefix=year_prefix, Delimiter="/"
+            )
+            for month_prefix in [p["Prefix"] for p in months_resp.get("CommonPrefixes", [])]:
+                days_resp = _s3.list_objects_v2(
+                    Bucket=S3_BUCKET, Prefix=month_prefix, Delimiter="/"
+                )
+                for day_prefix in [p["Prefix"] for p in days_resp.get("CommonPrefixes", [])]:
+                    hours_resp = _s3.list_objects_v2(
+                        Bucket=S3_BUCKET, Prefix=day_prefix, Delimiter="/"
+                    )
+                    for hour_prefix in [p["Prefix"] for p in hours_resp.get("CommonPrefixes", [])]:
+                        m = partition_pattern.match(hour_prefix)
+                        if not m:
+                            continue
+                        values = (m.group(1), m.group(2), m.group(3), m.group(4))
+                        if values not in existing:
+                            new_partitions.append({
+                                "Values": list(values),
+                                "StorageDescriptor": {
+                                    **sd,
+                                    "Location": f"s3://{S3_BUCKET}/{hour_prefix}",
+                                },
+                            })
+
+        if not new_partitions:
+            print(f"Partition repair: 0 new (already {len(existing)} registered)")
+            return
+
+        # Glue allows max 100 partitions per batch
+        for i in range(0, len(new_partitions), 100):
+            batch = new_partitions[i : i + 100]
+            resp = _glue.batch_create_partition(
+                DatabaseName=DATABASE,
+                TableName=TABLE,
+                PartitionInputList=batch,
+            )
+            errors = resp.get("Errors", [])
+            if errors:
+                print(f"Partition batch errors: {errors}")
+
+        print(f"Partition repair: {len(new_partitions)} new partitions registered")
+
     except Exception as e:
         print(f"Partition repair warning: {e}")
+
+
+# ── GeoIP Enrichment ──
+def _is_private_ip(ip):
+    """Check if an IP is private/reserved."""
+    if not ip:
+        return True
+    parts = ip.split(".")
+    if len(parts) != 4:
+        return True
+    try:
+        first, second = int(parts[0]), int(parts[1])
+    except ValueError:
+        return True
+    if first == 10:
+        return True
+    if first == 172 and 16 <= second <= 31:
+        return True
+    if first == 192 and second == 168:
+        return True
+    if first == 127:
+        return True
+    return False
+
+
+def _enrich_geo(ip):
+    """Look up country info for an IP using ip-api.com (free, no key).
+
+    Returns dict with country_name, country_code, flag or empty dict.
+    """
+    if not ip or _is_private_ip(ip):
+        return {}
+
+    if ip in _geo_cache:
+        return _geo_cache[ip]
+
+    try:
+        url = f"http://ip-api.com/json/{ip}?fields=status,country,countryCode"
+        req = urllib.request.Request(url, headers={"User-Agent": "PhantomWall/1.0"})
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            data = json.loads(resp.read().decode())
+
+        if data.get("status") == "success":
+            cc = data.get("countryCode", "")
+            result = {
+                "country_name": data.get("country", "Unknown"),
+                "country_code": cc,
+                "flag": _country_flag(cc),
+            }
+        else:
+            result = {}
+    except Exception:
+        result = {}
+
+    _geo_cache[ip] = result
+    return result
+
+
+def _country_flag(cc):
+    """Convert 2-letter country code to flag emoji."""
+    if not cc or len(cc) != 2:
+        return ""
+    return chr(0x1F1E6 + ord(cc[0].upper()) - ord("A")) + chr(
+        0x1F1E6 + ord(cc[1].upper()) - ord("A")
+    )
+
+
+def _enrich_results_with_geo(items):
+    """Add country info to each log item based on src_ip."""
+    for item in items:
+        src_ip = item.get("src_ip", "")
+        geo = _enrich_geo(src_ip)
+        if geo:
+            item["country_name"] = geo.get("country_name", "")
+            item["country_code"] = geo.get("country_code", "")
+            item["flag"] = geo.get("flag", "")
+        else:
+            item["country_name"] = "Private" if _is_private_ip(src_ip) else "Unknown"
+            item["country_code"] = ""
+            item["flag"] = ""
+    return items
 
 
 def handler(event, context):
@@ -240,6 +388,10 @@ def handler(event, context):
         result, error = _run_athena_query(query)
         if error:
             return _response(500, {"error": error})
+
+        # Enrich results with GeoIP country data
+        if result and result.get("items"):
+            result["items"] = _enrich_results_with_geo(result["items"])
 
         return _response(200, {
             "date": params.get("date", datetime.datetime.utcnow().strftime("%Y-%m-%d")),

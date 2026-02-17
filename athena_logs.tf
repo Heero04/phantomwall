@@ -205,7 +205,9 @@ resource "aws_iam_role_policy" "lambda_log_query" {
         Action = [
           "glue:GetTable",
           "glue:GetPartitions",
-          "glue:GetDatabase"
+          "glue:GetDatabase",
+          "glue:BatchCreatePartition",
+          "glue:CreatePartition"
         ],
         Resource = [
           "arn:aws:glue:${var.aws_region}:*:catalog",
@@ -263,7 +265,7 @@ resource "aws_lambda_function" "s3_log_query" {
   runtime          = "python3.11"
   filename         = data.archive_file.s3_log_query.output_path
   source_code_hash = data.archive_file.s3_log_query.output_base64sha256
-  timeout          = 60  # Athena queries can take a few seconds
+  timeout          = 60 # Athena queries can take a few seconds
   memory_size      = 128
 
   environment {

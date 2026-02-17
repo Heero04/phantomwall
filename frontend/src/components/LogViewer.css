@@ -273,6 +273,11 @@
   white-space: nowrap;
 }
 
+.log-viewer__cell--origin {
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
 .log-viewer__cell--alert {
   max-width: 250px;
   overflow: hidden;

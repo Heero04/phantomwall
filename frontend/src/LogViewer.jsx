@@ -267,6 +267,7 @@ function LogViewer() {
                 <tr>
                   <th>Time</th>
                   <th>Type</th>
+                  <th>Origin</th>
                   <th>Source</th>
                   <th>Destination</th>
                   <th>Proto</th>
@@ -291,6 +292,9 @@ function LogViewer() {
                         >
                           {log.event_type || 'unknown'}
                         </span>
+                      </td>
+                      <td className="log-viewer__cell--origin" title={log.country_name || ''}>
+                        {log.flag || ''} {log.country_name || '-'}
                       </td>
                       <td className="log-viewer__cell--ip">
                         {log.src_ip || '-'}
@@ -317,7 +321,7 @@ function LogViewer() {
                     </tr>
                     {expandedRow === i && (
                       <tr className="log-viewer__detail-row">
-                        <td colSpan="7">
+                        <td colSpan="8">
                           <pre className="log-viewer__json">
                             {JSON.stringify(log, null, 2)}
                           </pre>
