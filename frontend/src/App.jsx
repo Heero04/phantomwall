@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import QuickAccess from './QuickAccess'
-import Dashboard from './Dashboard_BACKUP'
 import DashboardSafe from './DashboardSafe'
-import DashboardV2 from './DashboardV2'
-import AlertsPage from './AlertsPage'
+import AlertsLedger from './AlertsLedger'
 import GridTest from './GridTest'
 import SecurityDataTable from './SecurityDataTable'
 import PowerBIStyleDragDrop from './PowerBIStyleDragDrop'
@@ -11,7 +9,6 @@ import BarChartTest from './BarChartTest'
 import LibraryTest from './LibraryTest'
 import MapTest from './components/MapTest'
 import MapWidgetTest from './components/MapWidgetTest'
-import PowerBIDashboard from './components/PowerBIDashboard'
 import TerminalTest from './pages/TerminalTest'
 import ReactTerminal from './components/ReactTerminal'
 import PhantomWallTerminal from './components/PhantomWallTerminal'
@@ -19,6 +16,7 @@ import SimpleTerminalTest from './components/SimpleTerminalTest'
 import ChatAssistant from './ChatAssistant'
 import LogViewer from './LogViewer'
 import SSMCommands from './SSMCommands'
+import TrafficView from './TrafficView'
 // Auth Components
 import { MockAuthProvider } from './contexts/MockAuthContext'
 import Login from './components/Login'
@@ -49,8 +47,8 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'dashboard',
-    label: 'Dashboard',
+    key: 'alerts-ledger',
+    label: 'Alert Ledger',
     icon: (
       <svg
         className="menu-item__icon"
@@ -64,15 +62,16 @@ const NAV_ITEMS = [
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        <rect x="3" y="12" width="4" height="8" rx="1" />
-        <rect x="10" y="9" width="4" height="11" rx="1" />
-        <rect x="17" y="5" width="4" height="15" rx="1" />
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
       </svg>
     ),
   },
   {
-    key: 'original-dashboard',
-    label: 'Original Dashboard',
+    key: 'traffic-view',
+    label: 'Traffic View',
     icon: (
       <svg
         className="menu-item__icon"
@@ -86,54 +85,7 @@ const NAV_ITEMS = [
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M3 9h18"/>
-        <path d="M3 15h18"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'dashboardv2',
-    label: 'Dashboard v2',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="3" width="7" height="9" rx="1" />
-        <rect x="13" y="3" width="7" height="5" rx="1" />
-        <rect x="13" y="12" width="7" height="8" rx="1" />
-        <rect x="3" y="16" width="7" height="4" rx="1" />
-      </svg>
-    ),
-  },
-  {
-    key: 'alerts',
-    label: 'Security Alerts',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M12 9v4l2 2" />
-        <path d="M21 12c0 1.1-.1 2.2-.3 3.3l-1.8-.6c.1-.9.1-1.8.1-2.7 0-4.4-3.6-8-8-8s-8 3.6-8 8c0 .9 0 1.8.1 2.7l-1.8.6C3.1 14.2 3 13.1 3 12c0-5 4-9 9-9s9 4 9 9Z" />
-        <path d="M12 7v6l1.5 1.5" />
+        <path d="M3 12h4l2-6 4 12 2-6h6"/>
       </svg>
     ),
   },
@@ -380,28 +332,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'logs',
-    label: 'S3 Log Viewer',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-    ),
-  },
-  {
     key: 'ssm',
     label: 'SSM Commands',
     icon: (
@@ -490,39 +420,12 @@ export default function App() {
 
         <main className="main">
           {activePage === 'console' && <QuickAccess />}
-
-          {activePage === 'dashboard' && (
-            <>
-              <PowerBIDashboard />
-            </>
-          )}
-
-          {activePage === 'original-dashboard' && (
-            <>
-              <Dashboard />
-              <div style={{ 
-                background: '#f0f8ff', 
-                padding: '16px', 
-                margin: '20px auto', 
-                maxWidth: '1200px',
-                border: '1px solid #bee5eb',
-                borderRadius: '8px'
-              }}>
-                <h3>📊 Original Suricata Dashboard</h3>
-                <p>This is the original real-time dashboard for Suricata events and honeypot telemetry.</p>
-                <p>The main Dashboard now features the new Power BI-style interface with drag & drop widgets.</p>
-              </div>
-            </>
-          )}
-
-          {activePage === 'alerts' && <AlertsPage />}
+          {activePage === 'alerts-ledger' && <AlertsLedger />}
+          {activePage === 'traffic-view' && <TrafficView />}
 
           {activePage === 'logs' && <LogViewer />}
 
           {activePage === 'ssm' && <SSMCommands />}
-
-          {activePage === 'dashboardv2' && <DashboardV2 />}
-
           {activePage === 'gridtest' && <GridTest />}
 
           {activePage === 'datatable' && <SecurityDataTable />}
@@ -563,3 +466,4 @@ export default function App() {
     </ProSidebarProvider>
   )
 }
+

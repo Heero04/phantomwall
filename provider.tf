@@ -13,11 +13,11 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = var.project_name          # Project identifier
-      Environment = var.environment           # Deployment environment
-      Owner       = "team-engineering"        # Team ownership
-      CostCenter  = "cloud-security"          # Cost tracking
-      Service     = "threat-monitoring"       # Service classification
+      Project     = var.project_name    # Project identifier
+      Environment = var.environment     # Deployment environment
+      Owner       = "team-engineering"  # Team ownership
+      CostCenter  = "cloud-security"    # Cost tracking
+      Service     = "threat-monitoring" # Service classification
     }
   }
 }

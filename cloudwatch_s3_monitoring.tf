@@ -322,7 +322,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "Ingest Lambda — Invocations"
+          title = "Ingest Lambda — Invocations"
           metrics = [
             ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.suricata_ingest.function_name, { stat = "Sum", period = 300, color = "#2ca02c" }]
           ]
@@ -338,7 +338,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "Ingest Lambda — Errors & Throttles"
+          title = "Ingest Lambda — Errors & Throttles"
           metrics = [
             ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.suricata_ingest.function_name, { stat = "Sum", period = 300, color = "#d62728" }],
             ["AWS/Lambda", "Throttles", "FunctionName", aws_lambda_function.suricata_ingest.function_name, { stat = "Sum", period = 300, color = "#ff7f0e" }]
@@ -355,7 +355,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "Ingest Lambda — Duration (ms)"
+          title = "Ingest Lambda — Duration (ms)"
           metrics = [
             ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.suricata_ingest.function_name, { stat = "Average", period = 300, color = "#1f77b4" }],
             ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.suricata_ingest.function_name, { stat = "Maximum", period = 300, color = "#ff7f0e" }]
@@ -374,7 +374,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "S3 Writes (from Ingest Lambda)"
+          title = "S3 Writes (from Ingest Lambda)"
           metrics = [
             ["${var.project_name}/Pipeline", "S3WritesSuccess", { stat = "Sum", period = 300, color = "#2ca02c" }],
             ["${var.project_name}/Pipeline", "S3WriteErrors", { stat = "Sum", period = 300, color = "#d62728" }]
@@ -391,7 +391,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "DynamoDB Alerts Stored"
+          title = "DynamoDB Alerts Stored"
           metrics = [
             ["${var.project_name}/Pipeline", "DynamoDBAlerts", { stat = "Sum", period = 300, color = "#9467bd" }]
           ]
@@ -407,7 +407,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "S3 Bucket — Size & Object Count"
+          title = "S3 Bucket — Size & Object Count"
           metrics = [
             ["AWS/S3", "BucketSizeBytes", "BucketName", aws_s3_bucket.suricata_logs.id, "StorageType", "StandardStorage", { stat = "Average", period = 86400, color = "#1f77b4" }],
             ["AWS/S3", "NumberOfObjects", "BucketName", aws_s3_bucket.suricata_logs.id, "StorageType", "AllStorageTypes", { stat = "Average", period = 86400, color = "#ff7f0e", yAxis = "right" }]
@@ -426,7 +426,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 12
         height = 6
         properties = {
-          title   = "S3 Bucket — PUT/GET Requests"
+          title = "S3 Bucket — PUT/GET Requests"
           metrics = [
             ["AWS/S3", "PutRequests", "BucketName", aws_s3_bucket.suricata_logs.id, "FilterId", "EntireBucket", { stat = "Sum", period = 300, color = "#2ca02c" }],
             ["AWS/S3", "GetRequests", "BucketName", aws_s3_bucket.suricata_logs.id, "FilterId", "EntireBucket", { stat = "Sum", period = 300, color = "#1f77b4" }]
@@ -443,7 +443,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 12
         height = 6
         properties = {
-          title   = "S3 Bucket — Errors"
+          title = "S3 Bucket — Errors"
           metrics = [
             ["AWS/S3", "4xxErrors", "BucketName", aws_s3_bucket.suricata_logs.id, "FilterId", "EntireBucket", { stat = "Sum", period = 300, color = "#ff7f0e" }],
             ["AWS/S3", "5xxErrors", "BucketName", aws_s3_bucket.suricata_logs.id, "FilterId", "EntireBucket", { stat = "Sum", period = 300, color = "#d62728" }]
@@ -472,7 +472,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "Log Query Lambda — Invocations"
+          title = "Log Query Lambda — Invocations"
           metrics = [
             ["AWS/Lambda", "Invocations", "FunctionName", aws_lambda_function.s3_log_query.function_name, { stat = "Sum", period = 300, color = "#2ca02c" }]
           ]
@@ -488,7 +488,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "Log Query Lambda — Errors"
+          title = "Log Query Lambda — Errors"
           metrics = [
             ["AWS/Lambda", "Errors", "FunctionName", aws_lambda_function.s3_log_query.function_name, { stat = "Sum", period = 300, color = "#d62728" }]
           ]
@@ -504,7 +504,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 8
         height = 6
         properties = {
-          title   = "Log Query Lambda — Duration (ms)"
+          title = "Log Query Lambda — Duration (ms)"
           metrics = [
             ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.s3_log_query.function_name, { stat = "Average", period = 300, color = "#1f77b4" }],
             ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.s3_log_query.function_name, { stat = "Maximum", period = 300, color = "#ff7f0e" }]
@@ -523,7 +523,7 @@ resource "aws_cloudwatch_dashboard" "s3_pipeline" {
         width  = 24
         height = 3
         properties = {
-          title  = "🚨 Pipeline Alarm Status"
+          title = "🚨 Pipeline Alarm Status"
           alarms = [
             aws_cloudwatch_metric_alarm.ingest_lambda_errors.arn,
             aws_cloudwatch_metric_alarm.ingest_lambda_no_invocations.arn,

@@ -11,7 +11,7 @@
 
 resource "aws_s3_bucket" "suricata_logs" {
   bucket        = "${var.project_name}-s3-logs-${var.environment}"
-  force_destroy = true  # Allow terraform destroy even when bucket has objects
+  force_destroy = true # Allow terraform destroy even when bucket has objects
 
   tags = {
     Project = var.project_name
@@ -56,7 +56,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "suricata_logs" {
 
     transition {
       days          = 30
-      storage_class = "GLACIER_IR"  # Instant Retrieval Glacier - $0.004/GB
+      storage_class = "GLACIER_IR" # Instant Retrieval Glacier - $0.004/GB
     }
 
     # Delete logs older than 1 year (adjust as needed)

@@ -11,7 +11,7 @@
 
 resource "aws_cloudwatch_log_group" "suricata" {
   name              = var.cw_log_group
-  retention_in_days = 7  # Reduced from 30 days - data persists in DynamoDB (~$4/month savings)
+  retention_in_days = 7 # Reduced from 30 days - data persists in DynamoDB (~$4/month savings)
 
   tags = {
     Project = var.project_name
@@ -109,13 +109,13 @@ resource "aws_lambda_function" "suricata_ingest" {
   filename         = data.archive_file.suricata_lambda.output_path
   source_code_hash = data.archive_file.suricata_lambda.output_base64sha256
   timeout          = 30
-  memory_size      = 256  # Reduced from 512 MB - sufficient for JSON processing (~$1/month savings)
+  memory_size      = 256 # Reduced from 512 MB - sufficient for JSON processing (~$1/month savings)
 
   environment {
     variables = {
       TABLE_NAME       = aws_dynamodb_table.suricata_events.name
       S3_BUCKET_NAME   = aws_s3_bucket.suricata_logs.id
-      ENABLE_S3_BACKUP = "true"  # Feature flag to enable/disable S3 writes
+      ENABLE_S3_BACKUP = "true" # Feature flag to enable/disable S3 writes
     }
   }
 

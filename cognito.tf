@@ -24,7 +24,7 @@ resource "aws_cognito_user_pool" "phantomwall" {
   # ----------------------------------------------------------
   # Note: Use either alias_attributes OR username_attributes, not both
   username_attributes = ["email"]
-  
+
   username_configuration {
     case_sensitive = false
   }
@@ -55,7 +55,7 @@ resource "aws_cognito_user_pool" "phantomwall" {
   # Email Verification
   # ----------------------------------------------------------
   auto_verified_attributes = ["email"]
-  
+
   verification_message_template {
     default_email_option = "CONFIRM_WITH_CODE"
     email_subject        = "PhantomWall - Verify your email"
@@ -113,13 +113,13 @@ resource "aws_cognito_user_pool" "phantomwall" {
   # ----------------------------------------------------------
   # MFA Configuration (Optional - disabled by default)
   # ----------------------------------------------------------
-  mfa_configuration = "OFF"  # Can be "ON" or "OPTIONAL" later
+  mfa_configuration = "OFF" # Can be "ON" or "OPTIONAL" later
 
   # ----------------------------------------------------------
   # Advanced Security (Adaptive Auth)
   # ----------------------------------------------------------
   user_pool_add_ons {
-    advanced_security_mode = "ENFORCED"  # Protects against compromised credentials
+    advanced_security_mode = "ENFORCED" # Protects against compromised credentials
   }
 
   # ----------------------------------------------------------
@@ -154,17 +154,17 @@ resource "aws_cognito_user_pool_client" "phantomwall_web" {
   # OAuth Flow Configuration
   # ----------------------------------------------------------
   explicit_auth_flows = [
-    "ALLOW_USER_PASSWORD_AUTH",      # Username/password auth
-    "ALLOW_REFRESH_TOKEN_AUTH",      # Refresh expired tokens
-    "ALLOW_USER_SRP_AUTH"            # Secure Remote Password (SRP) protocol
+    "ALLOW_USER_PASSWORD_AUTH", # Username/password auth
+    "ALLOW_REFRESH_TOKEN_AUTH", # Refresh expired tokens
+    "ALLOW_USER_SRP_AUTH"       # Secure Remote Password (SRP) protocol
   ]
 
   # ----------------------------------------------------------
   # Token Validity
   # ----------------------------------------------------------
-  refresh_token_validity = 30  # 30 days
-  access_token_validity  = 60  # 60 minutes
-  id_token_validity      = 60  # 60 minutes
+  refresh_token_validity = 30 # 30 days
+  access_token_validity  = 60 # 60 minutes
+  id_token_validity      = 60 # 60 minutes
 
   token_validity_units {
     refresh_token = "days"
@@ -175,7 +175,7 @@ resource "aws_cognito_user_pool_client" "phantomwall_web" {
   # ----------------------------------------------------------
   # Security Settings
   # ----------------------------------------------------------
-  prevent_user_existence_errors = "ENABLED"  # Don't leak user existence
+  prevent_user_existence_errors = "ENABLED" # Don't leak user existence
   enable_token_revocation       = true
 
   # ----------------------------------------------------------

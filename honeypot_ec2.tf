@@ -69,7 +69,7 @@ data "aws_subnets" "by_tag" {
 
 resource "aws_cloudwatch_log_group" "honeypot_bootstrap" {
   name              = var.cw_bootstrap_log_group
-  retention_in_days = 7  # Reduced from 14 days for cost optimization
+  retention_in_days = 7 # Reduced from 14 days for cost optimization
 
   tags = {
     Project = var.project_name != "" ? var.project_name : "phantomwall"

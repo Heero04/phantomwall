@@ -51,9 +51,9 @@ variable "common_tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
   default = {
-    Project     = "phantomwall"  # Project identifier
-    Environment = "dev"          # Default environment (override with var.environment)
-    ManagedBy   = "terraform"    # Infrastructure management tool
+    Project     = "phantomwall" # Project identifier
+    Environment = "dev"         # Default environment (override with var.environment)
+    ManagedBy   = "terraform"   # Infrastructure management tool
   }
 }
 
@@ -83,7 +83,7 @@ variable "environment" {
   description = "Deployment environment (dev, staging, prod)"
   type        = string
   default     = "dev"
-  
+
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be dev, staging, or prod."
