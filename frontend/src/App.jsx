@@ -14,7 +14,9 @@ import ReactTerminal from './components/ReactTerminal'
 import PhantomWallTerminal from './components/PhantomWallTerminal'
 import SimpleTerminalTest from './components/SimpleTerminalTest'
 import ChatAssistant from './ChatAssistant'
-import LogViewer from './LogViewer'
+import S3LogExplorer from './pages/S3LogExplorer'
+import ArchiveExplorer from './pages/ArchiveExplorer'
+import HoneypotFleetManager from './pages/HoneypotFleetManager'
 import SSMCommands from './SSMCommands'
 import TrafficView from './TrafficView'
 // Auth Components
@@ -108,6 +110,51 @@ const NAV_ITEMS = [
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="7 10 12 15 17 10"/>
         <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'archive',
+    label: 'Archive Explorer',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <polyline points="21 8 21 21 3 21 3 8"/>
+        <rect x="1" y="3" width="22" height="5" rx="1"/>
+        <line x1="10" y1="12" x2="14" y2="12"/>
+      </svg>
+    ),
+  },
+  {
+    key: 'fleet',
+    label: 'Fleet Manager',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="3" y="6" width="7" height="5" rx="1"/>
+        <rect x="14" y="6" width="7" height="5" rx="1"/>
+        <rect x="8.5" y="15" width="7" height="5" rx="1"/>
+        <path d="M10 8.5h4M12 11v4"/>
       </svg>
     ),
   },
@@ -423,7 +470,10 @@ export default function App() {
           {activePage === 'alerts-ledger' && <AlertsLedger />}
           {activePage === 'traffic-view' && <TrafficView />}
 
-          {activePage === 'logs' && <LogViewer />}
+          {activePage === 'logs' && <S3LogExplorer />}
+
+          {activePage === 'archive' && <ArchiveExplorer />}
+          {activePage === 'fleet' && <HoneypotFleetManager />}
 
           {activePage === 'ssm' && <SSMCommands />}
           {activePage === 'gridtest' && <GridTest />}
@@ -466,4 +516,5 @@ export default function App() {
     </ProSidebarProvider>
   )
 }
+
 
