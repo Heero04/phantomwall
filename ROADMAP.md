@@ -40,6 +40,37 @@
 
 ## 📊 PHASE 2: Feature Enhancement (2-3 weeks)
 
+### CloudFront + WAF Live Traffic Filtering
+- [ ] **Add CloudFront Distribution in Front of API Gateway**
+  - Create `cloudfront.tf` — CloudFront distribution with API Gateway HTTP API as origin
+  - Cache GET routes (/events, /metrics, /waf/status) at edge for faster dashboard loads
+  - Set POST routes (/waf/toggle-rule, /fleet/action, /chat) to CachingDisabled
+  - Configure CloudFront to forward `Origin` header for CORS compatibility
+  - Free AWS Shield Standard DDoS protection included automatically
+  - **Cost: ~$0.20/month** (essentially free at current traffic levels)
+
+- [ ] **Migrate WAF Scope from REGIONAL to CLOUDFRONT**
+  - Change `scope = "REGIONAL"` → `scope = "CLOUDFRONT"` in waf.tf (Web ACL + IP Sets)
+  - ⚠️ This is a **destructive operation** — Terraform destroys and recreates the Web ACL, IP sets, and logging config
+  - Any runtime-blocked IPs in the blocklist will be wiped (starts fresh with empty `addresses = []`)
+  - WAF API Lambda env vars will get new resource IDs automatically
+  - Must be in `us-east-1` for CloudFront scope (already there ✅)
+
+- [ ] **Associate WAF Web ACL with CloudFront Distribution**
+  - Uncomment and update `aws_wafv2_web_acl_association` in waf.tf
+  - Point `resource_arn` to the CloudFront distribution ARN
+  - This enables **live traffic filtering** — rate limiting, SQLi, XSS, geo-blocking, IP blocklist all enforced on real requests
+
+- [ ] **Update Frontend API URL**
+  - Change `VITE_SURICATA_API_URL` in `.env` from API Gateway URL to CloudFront URL (`https://d1234abcdef.cloudfront.net`)
+  - Update `frontend_env.tf` to auto-generate the CloudFront URL
+  - **Zero frontend code changes needed** — all pages read from the same env var
+
+- [ ] **Verify Toggle Fix Still Works**
+  - Test WAF rule toggling through CloudFront (on/off for all 5 rules)
+  - Test lockdown mode activation/deactivation
+  - Confirm auto-block pipeline still fires via DynamoDB Streams
+
 ### Core Features
 - [ ] **Alert Details Modal**
   - Click any alert for full JSON data
