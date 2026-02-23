@@ -26,6 +26,10 @@ resource "aws_dynamodb_table" "suricata_events" {
   hash_key     = "event_date"
   range_key    = "event_id"
 
+  # Enable DynamoDB Streams for WAF auto-block pipeline
+  stream_enabled   = var.waf_enabled
+  stream_view_type = var.waf_enabled ? "NEW_IMAGE" : null
+
   attribute {
     name = "event_date"
     type = "S"

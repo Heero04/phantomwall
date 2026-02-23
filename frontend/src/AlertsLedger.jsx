@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import './components/AlertsLedger.css';
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL;
 
@@ -346,22 +347,10 @@ const AlertsLedger = () => {
     };
   }, [filteredAlerts]);
 
-  const pageStyle = {
-    minHeight: '100dvh',
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-    padding: '2rem 2.5rem'
-  };
-
-  const shellStyle = {
-    maxWidth: '1400px',
-    margin: '0 auto',
-    color: '#e2e8f0'
-  };
-
   const panelStyle = {
-    background: 'rgba(30, 41, 59, 0.6)',
+    background: 'rgba(15, 23, 42, 0.55)',
     backdropFilter: 'blur(20px)',
-    border: '1px solid rgba(100, 116, 139, 0.3)',
+    border: '1px solid rgba(100, 116, 139, 0.2)',
     borderRadius: '1rem',
     padding: '1.25rem',
     position: 'relative',
@@ -370,8 +359,8 @@ const AlertsLedger = () => {
 
   if (loading) {
     return (
-      <div style={pageStyle}>
-        <div style={shellStyle}>
+      <div className="ledger">
+        <div className="ledger__shell">
           <div style={{ ...panelStyle, textAlign: 'center', padding: '3rem 1.25rem' }}>
             <div style={{ marginBottom: '0.75rem', color: '#22d3ee' }}>Loading security alerts...</div>
           </div>
@@ -382,8 +371,8 @@ const AlertsLedger = () => {
 
   if (error) {
     return (
-      <div style={pageStyle}>
-        <div style={shellStyle}>
+      <div className="ledger">
+        <div className="ledger__shell">
           <div style={{ ...panelStyle, textAlign: 'center', padding: '3rem 1.25rem', border: '1px solid rgba(248, 113, 113, 0.3)' }}>
             <div style={{ color: '#f87171', fontWeight: 700, marginBottom: '0.5rem' }}>Failed to load alerts</div>
             <div style={{ color: '#cbd5e1', fontSize: '0.9rem' }}>{error}</div>
@@ -394,26 +383,37 @@ const AlertsLedger = () => {
   }
 
   return (
-    <div style={pageStyle}>
-      <div style={shellStyle}>
-        <div className="alerts-ledger-grid" style={{ display: 'grid', gap: '2rem' }}>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-              gap: '1rem',
-              position: 'sticky',
-              top: '1rem',
-              zIndex: 40
-            }}
-            className="alerts-stat-grid"
-          >
+    <div className="ledger">
+      <div className="ledger__shell">
+
+        {/* ── Hero ──────────────────────────────────────────── */}
+        <section className="ledger__hero">
+          <div className="ledger__hero-text">
+            <p className="ledger__eyebrow">🔔 Security Events</p>
+            <h2>📋 Alerts Ledger</h2>
+            <p className="ledger__hero-sub">
+              Real-time security alerts from your honeypot fleet — filter, search, and respond to threats as they emerge.
+            </p>
+          </div>
+          <div className="ledger__hero-actions">
+            <span style={{ fontSize: '0.85rem', color: isRefreshing ? '#22d3ee' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isRefreshing ? '#22d3ee' : '#10b981', boxShadow: isRefreshing ? '0 0 8px rgba(34, 211, 238, 0.6)' : '0 0 8px rgba(16, 185, 129, 0.6)' }} />
+              {isRefreshing ? 'Syncing...' : 'Live'}
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
+            </span>
+          </div>
+        </section>
+
+        <div style={{ display: 'grid', gap: '1.5rem' }}>
+          <div className="ledger__stat-grid">
             {[
               { label: 'Total Alerts', value: totalAlerts },
               { label: 'High Severity', value: highSeverity },
               { label: 'Unique Threat Actors', value: uniqueActors }
             ].map((s) => (
-              <div key={s.label} style={panelStyle}>
+              <div key={s.label} className="ledger__panel" style={{ padding: '1rem' }}>
                 <div style={{
                   background: 'rgba(15, 23, 42, 0.5)',
                   border: '1px solid rgba(100, 116, 139, 0.3)',
@@ -448,7 +448,7 @@ const AlertsLedger = () => {
             ))}
           </div>
 
-          <div style={{ ...panelStyle, padding: '1rem' }}>
+          <div className="ledger__panel" style={{ padding: '1rem' }}>
             <div className="alerts-filter-row" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
               {(['critical', 'high', 'medium', 'low']).map((k) => {
                 const active = filters[k];
@@ -501,8 +501,8 @@ const AlertsLedger = () => {
             </div>
           </div>
 
-          <div className="alerts-main-grid" style={{ display: 'grid', gridTemplateColumns: '3fr 1.2fr', gap: '1.5rem', alignItems: 'start' }}>
-            <div style={{ ...panelStyle, padding: '1.25rem', display: 'flex', flexDirection: 'column', minHeight: 'calc(100dvh - 17rem)' }}>
+          <div className="ledger__main-grid">
+            <div className="ledger__panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', minHeight: 'calc(100dvh - 17rem)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 10px rgba(34, 211, 238, 0.8)' }} />
@@ -808,7 +808,7 @@ const AlertsLedger = () => {
               </div>
             </div>
 
-            <div style={{ ...panelStyle, padding: '1rem' }}>
+            <div className="ledger__panel" style={{ padding: '1rem' }}>
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                   <h3 style={{ margin: 0, color: '#fff', fontSize: '1rem' }}>Severity Breakdown</h3>
@@ -878,37 +878,6 @@ const AlertsLedger = () => {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 1100px) {
-          .alerts-main-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
-        .ip-inline-action--hover-only {
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.2s ease;
-        }
-
-        .source-ip-cell:hover .ip-inline-action--hover-only {
-          opacity: 1;
-          pointer-events: auto;
-        }
-
-        @media (max-width: 900px) {
-          .alerts-stat-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .alerts-ledger-grid {
-            gap: 1.25rem !important;
-          }
-        }
-      `}</style>
 
       {responseTarget && (
         <div

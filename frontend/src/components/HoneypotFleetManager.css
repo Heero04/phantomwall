@@ -8,12 +8,9 @@
   flex-direction: column;
   gap: 1.1rem;
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  border: 1px solid rgba(100, 116, 139, 0.3);
-  border-radius: 24px;
-  padding: 1.5rem;
+  background: linear-gradient(145deg, #070b14 0%, #0c1220 40%, #0f172a 70%, #0c1220 100%);
+  padding: 2rem 2.5rem;
   color: #e2e8f0;
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -24,12 +21,12 @@
   display: flex;
   align-items: center;
   gap: 2rem;
-  border-radius: 16px;
+  border-radius: 1rem;
   padding: 1.5rem 1.6rem;
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(100, 116, 139, 0.3);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   overflow: hidden;
 }
 
@@ -40,6 +37,14 @@
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(139, 92, 246, 0.07) 100%);
   pointer-events: none;
+}
+
+.fleet__hero::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.35), rgba(139, 92, 246, 0.3), transparent);
 }
 
 .fleet__hero-left {
@@ -843,6 +848,301 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Edge Security (WAF) Card
+   ═══════════════════════════════════════════════════════════════ */
+.fleet__waf {
+  position: relative;
+  border: 1px solid rgba(100, 116, 139, 0.25);
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 1.25rem 1.4rem;
+  overflow: hidden;
+  transition: border-color 0.4s, box-shadow 0.4s;
+}
+
+.fleet__waf::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.04) 0%, rgba(139, 92, 246, 0.03) 100%);
+  pointer-events: none;
+}
+
+.fleet__waf::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.2), transparent);
+}
+
+.fleet__waf--lockdown {
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.1), inset 0 0 40px rgba(239, 68, 68, 0.03);
+}
+
+.fleet__waf--lockdown::after {
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), rgba(245, 158, 11, 0.4), transparent);
+}
+
+/* ── WAF Header ───────────────────────────────────────────────── */
+.fleet__waf-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.fleet__waf-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fleet__waf-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.fleet__waf-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.fleet__waf-subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.fleet__waf-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+/* ── Blocked IPs counter ──────────────────────────────────────── */
+.fleet__waf-blocked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 0.75rem;
+}
+
+.fleet__waf-blocked-count {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #f87171;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  line-height: 1.1;
+}
+
+.fleet__waf-blocked-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+/* ── Lockdown button ──────────────────────────────────────────── */
+.fleet__waf-lockdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.5);
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.fleet__waf-lockdown-btn:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.fleet__waf-lockdown-btn--active {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.15);
+  animation: fleet-lockdown-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fleet-lockdown-pulse {
+  0%, 100% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.15); }
+  50% { box-shadow: 0 0 24px rgba(239, 68, 68, 0.3); }
+}
+
+/* ── WAF Rules grid ───────────────────────────────────────────── */
+.fleet__waf-rules {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.65rem;
+}
+
+.fleet__waf-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 0.75rem;
+  transition: border-color 0.25s, background 0.25s;
+}
+
+.fleet__waf-rule:hover {
+  border-color: rgba(100, 116, 139, 0.3);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.fleet__waf-rule-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.fleet__waf-rule-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.fleet__waf-rule-info > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fleet__waf-rule-info strong {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fleet__waf-rule-info span {
+  font-size: 0.65rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Toggle switch ────────────────────────────────────────────── */
+.fleet__waf-toggle {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.fleet__waf-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.fleet__waf-toggle-slider {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  background: #475569;
+  border-radius: 999px;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.fleet__waf-toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.fleet__waf-toggle input:checked + .fleet__waf-toggle-slider {
+  background: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+}
+
+.fleet__waf-toggle input:checked + .fleet__waf-toggle-slider::after {
+  transform: translateX(18px);
+}
+
+/* ── WAF Footer ───────────────────────────────────────────────── */
+.fleet__waf-footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(100, 116, 139, 0.12);
+}
+
+.fleet__waf-footer-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.fleet__waf-footer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.fleet__waf-footer-dot--ok {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.fleet__waf-footer-dot--warn {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.fleet__waf-footer-ts {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Responsive
    ═══════════════════════════════════════════════════════════════ */
 @media (max-width: 1150px) {
@@ -861,6 +1161,15 @@
 
   .fleet__hero-kpis {
     justify-content: center;
+  }
+
+  .fleet__waf-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fleet__waf-rules {
+    grid-template-columns: 1fr;
   }
 }
 

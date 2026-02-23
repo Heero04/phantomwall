@@ -58,3 +58,25 @@ output "suricata_chat_lambda" {
   value       = aws_lambda_function.suricata_chat.function_name
 }
 
+# ── WAF Outputs ─────────────────────────────────────────────────
+
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL"
+  value       = var.waf_enabled ? aws_wafv2_web_acl.main[0].arn : null
+}
+
+output "waf_blocklist_id" {
+  description = "ID of the WAF IP blocklist set"
+  value       = var.waf_enabled ? aws_wafv2_ip_set.blocklist[0].id : null
+}
+
+output "waf_api_lambda" {
+  description = "Lambda function serving the WAF management API"
+  value       = var.waf_enabled ? aws_lambda_function.waf_api[0].function_name : null
+}
+
+output "waf_autoblock_lambda" {
+  description = "Lambda function auto-blocking malicious IPs from honeypot alerts"
+  value       = var.waf_enabled ? aws_lambda_function.waf_autoblock[0].function_name : null
+}
+

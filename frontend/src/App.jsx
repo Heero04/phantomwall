@@ -1,24 +1,13 @@
 import React, { useState } from 'react'
 import QuickAccess from './QuickAccess'
-import DashboardSafe from './DashboardSafe'
-import AlertsLedger from './AlertsLedger'
-import GridTest from './GridTest'
-import SecurityDataTable from './SecurityDataTable'
-import PowerBIStyleDragDrop from './PowerBIStyleDragDrop'
-import BarChartTest from './BarChartTest'
-import LibraryTest from './LibraryTest'
-import MapTest from './components/MapTest'
-import MapWidgetTest from './components/MapWidgetTest'
-import TerminalTest from './pages/TerminalTest'
-import ReactTerminal from './components/ReactTerminal'
-import PhantomWallTerminal from './components/PhantomWallTerminal'
-import SimpleTerminalTest from './components/SimpleTerminalTest'
-import ChatAssistant from './ChatAssistant'
-import S3LogExplorer from './pages/S3LogExplorer'
-import ArchiveExplorer from './pages/ArchiveExplorer'
-import HoneypotFleetManager from './pages/HoneypotFleetManager'
-import SSMCommands from './SSMCommands'
 import TrafficView from './TrafficView'
+import AlertsLedger from './AlertsLedger'
+import HoneypotFleetManager from './pages/HoneypotFleetManager'
+import S3LogExplorer from './pages/S3LogExplorer'
+import IntelAnalytics from './pages/IntelAnalytics'
+import CloudPosture from './pages/CloudPosture'
+import Settings from './pages/Settings'
+import ChatAssistant from './ChatAssistant'
 // Auth Components
 import { MockAuthProvider } from './contexts/MockAuthContext'
 import Login from './components/Login'
@@ -28,9 +17,10 @@ import ForgotPassword from './components/ForgotPassword'
 import { ProSidebarProvider, Sidebar, Menu, MenuItem } from 'react-pro-sidebar'
 
 const NAV_ITEMS = [
+  /* ── 1. Command Center (Home) ── */
   {
     key: 'console',
-    label: 'Quick Access',
+    label: 'Command Center',
     icon: (
       <svg
         className="menu-item__icon"
@@ -48,9 +38,31 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  /* ── 2. Traffic Ledger (Real-Time) ── */
+  {
+    key: 'traffic-view',
+    label: 'Traffic Ledger',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M3 12h4l2-6 4 12 2-6h6"/>
+      </svg>
+    ),
+  },
+  /* ── 3. Alerts & Investigation (Action) ── */
   {
     key: 'alerts-ledger',
-    label: 'Alert Ledger',
+    label: 'Alerts & Investigation',
     icon: (
       <svg
         className="menu-item__icon"
@@ -71,70 +83,7 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
-  {
-    key: 'traffic-view',
-    label: 'Traffic View',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 12h4l2-6 4 12 2-6h6"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'logs',
-    label: 'S3 Log Explorer',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'archive',
-    label: 'Archive Explorer',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <polyline points="21 8 21 21 3 21 3 8"/>
-        <rect x="1" y="3" width="22" height="5" rx="1"/>
-        <line x1="10" y1="12" x2="14" y2="12"/>
-      </svg>
-    ),
-  },
+  /* ── 4. Fleet Manager (Control) ── */
   {
     key: 'fleet',
     label: 'Fleet Manager',
@@ -158,9 +107,10 @@ const NAV_ITEMS = [
       </svg>
     ),
   },
+  /* ── 5. S3 Log Archive (History) ── */
   {
-    key: 'gridtest',
-    label: 'Grid Test',
+    key: 'logs',
+    label: 'S3 Log Archive',
     icon: (
       <svg
         className="menu-item__icon"
@@ -174,16 +124,59 @@ const NAV_ITEMS = [
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        <rect x="3" y="3" width="7" height="7"/>
-        <rect x="14" y="3" width="7" height="7"/>
-        <rect x="14" y="14" width="7" height="7"/>
-        <rect x="3" y="14" width="7" height="7"/>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    ),
+  },
+  /* ── 6. Intel & Analytics (Strategic) ── */
+  {
+    key: 'intel',
+    label: 'Intel & Analytics',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    ),
+  },
+  /* ── Utility ── */
+  {
+    key: 'posture',
+    label: 'Cloud Posture',
+    icon: (
+      <svg
+        className="menu-item__icon"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
     ),
   },
   {
-    key: 'datatable',
-    label: 'Data Table',
+    key: 'settings',
+    label: 'Settings',
     icon: (
       <svg
         className="menu-item__icon"
@@ -197,206 +190,8 @@ const NAV_ITEMS = [
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="M3 9h18"/>
-        <path d="M9 21V9"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'dragdrop',
-    label: 'Drag & Drop',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M14 9V5a3 3 0 0 0-6 0v4"/>
-        <rect x="2" y="9" width="20" height="11" rx="2"/>
-        <circle cx="8" cy="15" r="1"/>
-        <circle cx="16" cy="15" r="1"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'barchart',
-    label: 'Bar Chart Test',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="12" width="4" height="8" rx="1" />
-        <rect x="10" y="8" width="4" height="12" rx="1" />
-        <rect x="17" y="4" width="4" height="16" rx="1" />
-      </svg>
-    ),
-  },
-  {
-    key: 'libtest',
-    label: 'Library Test',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-        <polyline points="14,2 14,8 20,8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10,9 9,9 8,9"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'maptest',
-    label: 'Map Test',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
-        <line x1="8" y1="2" x2="8" y2="18"/>
-        <line x1="16" y1="6" x2="16" y2="22"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'mapwidget',
-    label: 'Map Widget',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="10" r="3"/>
-        <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'terminaltest',
-    label: 'Terminal Test',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <polyline points="4 17 10 11 4 5"/>
-        <line x1="12" y1="19" x2="20" y2="19"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'terminal',
-    label: 'Terminal',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <polyline points="9 10 13 14 9 18"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'terminaltest2',
-    label: 'Terminal Debug',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <circle cx="12" cy="12" r="1"/>
-      </svg>
-    ),
-  },
-  {
-    key: 'ssm',
-    label: 'SSM Commands',
-    icon: (
-      <svg
-        className="menu-item__icon"
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-        <path d="M2 17l10 5 10-5"/>
-        <path d="M2 12l10 5 10-5"/>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
     ),
   },
@@ -404,8 +199,6 @@ const NAV_ITEMS = [
 
 export default function App() {
   const [activePage, setActivePage] = useState('console')
-  const [honeypotIp, setHoneypotIp] = useState('')
-  const [kaliIp, setKaliIp] = useState('')
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   const renderNavItems = () => (
@@ -466,45 +259,14 @@ export default function App() {
         </Sidebar>
 
         <main className="main">
-          {activePage === 'console' && <QuickAccess />}
-          {activePage === 'alerts-ledger' && <AlertsLedger />}
+          {activePage === 'console' && <QuickAccess onNavigate={setActivePage} />}
           {activePage === 'traffic-view' && <TrafficView />}
-
-          {activePage === 'logs' && <S3LogExplorer />}
-
-          {activePage === 'archive' && <ArchiveExplorer />}
+          {activePage === 'alerts-ledger' && <AlertsLedger />}
           {activePage === 'fleet' && <HoneypotFleetManager />}
-
-          {activePage === 'ssm' && <SSMCommands />}
-          {activePage === 'gridtest' && <GridTest />}
-
-          {activePage === 'datatable' && <SecurityDataTable />}
-
-          {activePage === 'dragdrop' && <PowerBIStyleDragDrop />}
-
-          {activePage === 'barchart' && <BarChartTest />}
-
-          {activePage === 'libtest' && <LibraryTest />}
-
-          {activePage === 'maptest' && <MapTest />}
-
-          {activePage === 'mapwidget' && <MapWidgetTest />}
-
-          {activePage === 'terminaltest' && <TerminalTest />}
-
-          {activePage === 'terminal' && (
-            <div className="page">
-              <header className="page__header">
-                <h2>Terminal</h2>
-                <p>Connect directly to your AWS EC2 instances via SSM sessions.</p>
-              </header>
-              <div style={{ height: 'calc(100vh - 200px)', padding: '20px' }}>
-                <PhantomWallTerminal />
-              </div>
-            </div>
-          )}
-
-          {activePage === 'terminaltest2' && <SimpleTerminalTest />}
+          {activePage === 'logs' && <S3LogExplorer />}
+          {activePage === 'intel' && <IntelAnalytics />}
+          {activePage === 'posture' && <CloudPosture />}
+          {activePage === 'settings' && <Settings />}
 
           <footer className="main__footer">
             <small>Use SSM where possible; SSH requires private keys stored locally.</small>

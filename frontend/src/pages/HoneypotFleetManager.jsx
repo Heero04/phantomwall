@@ -335,6 +335,16 @@ export default function HoneypotFleetManager() {
   const [busyAction, setBusyAction] = useState('')
   const [viewMode, setViewMode] = useState('cards') // 'cards' | 'table'
 
+  /* ── WAF / Edge Security State ──────────────────────────────── */
+  const [wafRateLimiting, setWafRateLimiting] = useState(true)
+  const [wafGeoBlocking, setWafGeoBlocking] = useState(false)
+  const [wafSqlInjection, setWafSqlInjection] = useState(true)
+  const [wafXssProtection, setWafXssProtection] = useState(true)
+  const [wafBotDetection, setWafBotDetection] = useState(false)
+  const [wafBlockedIPs, setWafBlockedIPs] = useState(0)
+  const [wafLockdownActive, setWafLockdownActive] = useState(false)
+  const [wafLoading, setWafLoading] = useState(false)
+
   /* ── Simulated real-time CPU/RAM jitter ──────────────────────── */
   const metricsTimer = useRef(null)
 
@@ -356,6 +366,73 @@ export default function HoneypotFleetManager() {
     metricsTimer.current = setInterval(jitterMetrics, 4000)
     return () => clearInterval(metricsTimer.current)
   }, [jitterMetrics])
+
+  /* ── WAF: Fetch real status from API ─────────────────────────── */
+  const fetchWafStatus = useCallback(async () => {
+    if (!API_URL) return
+    try {
+      const res = await fetch(`${API_URL}/waf/status`)
+      if (!res.ok) return
+      const data = await res.json()
+      const rules = data.rules || {}
+      setWafRateLimiting(!!rules.rate_limiting)
+      setWafSqlInjection(!!rules.sql_injection)
+      setWafXssProtection(!!rules.xss_protection)
+      setWafGeoBlocking(!!rules.geo_blocking)
+      setWafBotDetection(!!rules.bot_detection)
+      setWafBlockedIPs(data.blocked_ips_count || 0)
+      setWafLockdownActive(!!data.lockdown_active)
+    } catch (err) {
+      console.error('WAF status fetch failed:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchWafStatus()
+    const wafPoll = setInterval(fetchWafStatus, 30000)
+    return () => clearInterval(wafPoll)
+  }, [fetchWafStatus])
+
+  const handleToggleWafRule = async (ruleName, enabled) => {
+    if (!API_URL) return
+    setWafLoading(true)
+    try {
+      await fetch(`${API_URL}/waf/toggle-rule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rule_name: ruleName, enabled }),
+      })
+      await fetchWafStatus()
+    } catch (err) {
+      console.error(`WAF toggle ${ruleName} failed:`, err)
+      setError(`Failed to toggle ${ruleName}`)
+    } finally {
+      setWafLoading(false)
+    }
+  }
+
+  const handleLockdown = async () => {
+    if (!API_URL) return
+    setWafLoading(true)
+    const activate = !wafLockdownActive
+    try {
+      await fetch(`${API_URL}/waf/lockdown`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activate }),
+      })
+      await fetchWafStatus()
+      setMessage(activate
+        ? '🔒 LOCKDOWN ACTIVATED — All traffic blocked except allowlist.'
+        : '🔓 Lockdown released — returning to standard WAF posture.'
+      )
+    } catch (err) {
+      console.error('WAF lockdown failed:', err)
+      setError('Failed to toggle lockdown')
+    } finally {
+      setWafLoading(false)
+    }
+  }
 
   const filteredFleet = useMemo(() => {
     return fleet.filter((item) => {
@@ -502,6 +579,142 @@ export default function HoneypotFleetManager() {
 
       {/* ── AZ Topology ──────────────────────────────────────── */}
       <AZBar fleet={filteredFleet} />
+
+      {/* ── Edge Security (WAF) ──────────────────────────────── */}
+      <section className={`fleet__waf ${wafLockdownActive ? 'fleet__waf--lockdown' : ''}`}>
+        <div className="fleet__waf-header">
+          <div className="fleet__waf-title-row">
+            <span className="fleet__waf-icon">🛡️</span>
+            <div>
+              <h3 className="fleet__waf-title">Edge Security (WAF)</h3>
+              <p className="fleet__waf-subtitle">Web Application Firewall — perimeter defence rules</p>
+            </div>
+          </div>
+          <div className="fleet__waf-header-right">
+            <div className="fleet__waf-blocked">
+              <span className="fleet__waf-blocked-count">{wafBlockedIPs.toLocaleString()}</span>
+              <span className="fleet__waf-blocked-label">Active Blocks</span>
+            </div>
+            <button
+              type="button"
+              className={`fleet__waf-lockdown-btn ${wafLockdownActive ? 'fleet__waf-lockdown-btn--active' : ''}`}
+              onClick={handleLockdown}
+            >
+              {wafLockdownActive ? '🔒 Lockdown Active' : '🔓 Enable Lockdown'}
+            </button>
+          </div>
+        </div>
+
+        <div className="fleet__waf-rules">
+          {/* Rate Limiting */}
+          <div className="fleet__waf-rule">
+            <div className="fleet__waf-rule-info">
+              <span className="fleet__waf-rule-icon">⚡</span>
+              <div>
+                <strong>Rate Limiting</strong>
+                <span>Block brute-force &amp; DDoS attempts</span>
+              </div>
+            </div>
+            <label className="fleet__waf-toggle">
+              <input
+                type="checkbox"
+                checked={wafRateLimiting}
+                disabled={wafLoading}
+                onChange={() => handleToggleWafRule('rate_limiting', !wafRateLimiting)}
+              />
+              <span className="fleet__waf-toggle-slider" />
+            </label>
+          </div>
+
+          {/* SQL Injection */}
+          <div className="fleet__waf-rule">
+            <div className="fleet__waf-rule-info">
+              <span className="fleet__waf-rule-icon">💉</span>
+              <div>
+                <strong>SQL Injection Protection</strong>
+                <span>Block malicious SQL payloads</span>
+              </div>
+            </div>
+            <label className="fleet__waf-toggle">
+              <input
+                type="checkbox"
+                checked={wafSqlInjection}
+                disabled={wafLoading}
+                onChange={() => handleToggleWafRule('sql_injection', !wafSqlInjection)}
+              />
+              <span className="fleet__waf-toggle-slider" />
+            </label>
+          </div>
+
+          {/* XSS Protection */}
+          <div className="fleet__waf-rule">
+            <div className="fleet__waf-rule-info">
+              <span className="fleet__waf-rule-icon">🧬</span>
+              <div>
+                <strong>XSS Protection</strong>
+                <span>Block cross-site scripting vectors</span>
+              </div>
+            </div>
+            <label className="fleet__waf-toggle">
+              <input
+                type="checkbox"
+                checked={wafXssProtection}
+                disabled={wafLoading}
+                onChange={() => handleToggleWafRule('xss_protection', !wafXssProtection)}
+              />
+              <span className="fleet__waf-toggle-slider" />
+            </label>
+          </div>
+
+          {/* Geo-Blocking */}
+          <div className="fleet__waf-rule">
+            <div className="fleet__waf-rule-info">
+              <span className="fleet__waf-rule-icon">🌍</span>
+              <div>
+                <strong>Geo-Blocking</strong>
+                <span>Restrict traffic by geographic origin</span>
+              </div>
+            </div>
+            <label className="fleet__waf-toggle">
+              <input
+                type="checkbox"
+                checked={wafGeoBlocking}
+                disabled={wafLoading}
+                onChange={() => handleToggleWafRule('geo_blocking', !wafGeoBlocking)}
+              />
+              <span className="fleet__waf-toggle-slider" />
+            </label>
+          </div>
+
+          {/* Bot Detection */}
+          <div className="fleet__waf-rule">
+            <div className="fleet__waf-rule-info">
+              <span className="fleet__waf-rule-icon">🤖</span>
+              <div>
+                <strong>Bot Detection</strong>
+                <span>AI-powered bot traffic filtering</span>
+              </div>
+            </div>
+            <label className="fleet__waf-toggle">
+              <input
+                type="checkbox"
+                checked={wafBotDetection}
+                disabled={wafLoading}
+                onChange={() => handleToggleWafRule('bot_detection', !wafBotDetection)}
+              />
+              <span className="fleet__waf-toggle-slider" />
+            </label>
+          </div>
+        </div>
+
+        <div className="fleet__waf-footer">
+          <span className="fleet__waf-footer-status">
+            <span className={`fleet__waf-footer-dot ${[wafRateLimiting, wafSqlInjection, wafXssProtection, wafGeoBlocking, wafBotDetection].filter(Boolean).length >= 3 ? 'fleet__waf-footer-dot--ok' : 'fleet__waf-footer-dot--warn'}`} />
+            {[wafRateLimiting, wafSqlInjection, wafXssProtection, wafGeoBlocking, wafBotDetection].filter(Boolean).length}/5 Rules Active
+          </span>
+          <span className="fleet__waf-footer-ts">Last sync: {new Date().toLocaleTimeString()}</span>
+        </div>
+      </section>
 
       {/* ── Controls ─────────────────────────────────────────── */}
       <section className="fleet__controls">

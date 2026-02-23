@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import './styles.css';
+import './components/QuickAccess.css';
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL;
 
-const QuickAccess = () => {
-  const [honeypotStatus, setHoneypotStatus] = useState('running');
+const QuickAccess = ({ onNavigate }) => {
+  const [honeypotStatus, setHoneypotStatus] = useState('unknown');
   const [isStarting, setIsStarting] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fleetInstances, setFleetInstances] = useState([]);
+  const [lockdownActive, setLockdownActive] = useState(false);
 
   // Fetch real data from API
   useEffect(() => {
@@ -24,10 +26,11 @@ const QuickAccess = () => {
         return;
       }
 
-      // Fetch alerts and metrics in parallel
-      const [alertsRes, metricsRes] = await Promise.all([
+      // Fetch alerts, metrics, and fleet in parallel
+      const [alertsRes, metricsRes, fleetRes] = await Promise.all([
         fetch(`${API_URL}/events`),
-        fetch(`${API_URL}/metrics`)
+        fetch(`${API_URL}/metrics`),
+        fetch(`${API_URL}/fleet/instances`)
       ]);
 
       if (alertsRes.ok) {
@@ -38,6 +41,16 @@ const QuickAccess = () => {
       if (metricsRes.ok) {
         const metricsData = await metricsRes.json();
         setMetrics(metricsData);
+      }
+
+      if (fleetRes.ok) {
+        const fleetData = await fleetRes.json();
+        const items = Array.isArray(fleetData?.items) ? fleetData.items : [];
+        setFleetInstances(items);
+        // Derive overall status: if any instance is running, show 'running'
+        const hasRunning = items.some(i => i.status === 'running');
+        const allStopped = items.length > 0 && items.every(i => i.status === 'stopped');
+        setHoneypotStatus(hasRunning ? 'running' : allStopped ? 'stopped' : 'unknown');
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -65,32 +78,76 @@ const QuickAccess = () => {
   // Calculate top origins from real data
   const topOrigins = calculateTopOrigins(alerts);
 
-  // Fleet Status
-  const fleetData = {
-    active: honeypotStatus === 'running' ? 5 : 0,
-    total: 5,
-    sentiment: honeypotStatus === 'running' ? 'operational' : 'suspended'
-  };
+  // Fleet Status – derived from real API data
+  const fleetData = (() => {
+    const running = fleetInstances.filter(i => i.status === 'running').length;
+    const total = fleetInstances.length;
+    const sentiment = total === 0 ? 'unknown' : running === total ? 'operational' : running === 0 ? 'suspended' : 'degraded';
+    return { active: running, total, sentiment };
+  })();
 
   const getFleetStatusText = () => {
-    if (fleetData.sentiment === 'suspended') return 'System Suspended';
+    if (fleetData.total === 0) return 'Loading fleet...';
+    if (fleetData.sentiment === 'suspended') return 'All traps offline';
     if (fleetData.active === fleetData.total) return 'All systems operational';
     if (fleetData.active === 0) return 'Critical: All traps offline';
     return `Degraded: ${fleetData.total - fleetData.active} trap(s) offline`;
   };
 
   const getFleetStatusColor = () => {
-    if (fleetData.sentiment === 'suspended') return '#f59e0b';
+    if (fleetData.total === 0) return '#64748b';
+    if (fleetData.sentiment === 'suspended') return '#ef4444';
     if (fleetData.active === fleetData.total) return '#10b981';
     if (fleetData.active === 0) return '#ef4444';
     return '#f59e0b';
   };
 
+  // Calculate uptime from the earliest running instance's LaunchTime
+  const getUptime = () => {
+    const runningInstances = fleetInstances.filter(i => i.status === 'running');
+    if (runningInstances.length === 0) return '00h 00m';
+    // Find the earliest launch (longest running)
+    const launchTimes = runningInstances.map(i => new Date(i.last_seen).getTime()).filter(t => !isNaN(t));
+    if (launchTimes.length === 0) return '—';
+    const earliest = Math.min(...launchTimes);
+    const diff = Date.now() - earliest;
+    const hours = Math.floor(diff / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+    if (hours >= 24) {
+      const days = Math.floor(hours / 24);
+      return `${days}d ${hours % 24}h`;
+    }
+    return `${hours}h ${String(mins).padStart(2, '0')}m`;
+  };
+
   const handleToggleHoneypot = async () => {
+    if (!API_URL || fleetInstances.length === 0) return;
     setIsStarting(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setHoneypotStatus(honeypotStatus === 'running' ? 'stopped' : 'running');
-    setIsStarting(false);
+    const newAction = honeypotStatus === 'running' ? 'stop' : 'start';
+    try {
+      // Send action to all fleet instances
+      await Promise.all(
+        fleetInstances.map(inst =>
+          fetch(`${API_URL}/fleet/action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              instance_id: inst.instance_id,
+              action: newAction,
+              mode: 'ec2',
+              region: inst.region,
+            }),
+          })
+        )
+      );
+      // Wait a moment then refresh fleet data
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await fetchData();
+    } catch (err) {
+      console.error('Toggle error:', err);
+    } finally {
+      setIsStarting(false);
+    }
   };
 
   function formatTimestamp(timestamp) {
@@ -153,24 +210,73 @@ const QuickAccess = () => {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-      padding: '3rem 4rem'
-    }}>
-      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+    <div className="qa">
+      <div className="qa__shell">
+
+        {/* ── Hero ──────────────────────────────────────────── */}
+        <section className="qa__hero">
+          <div className="qa__hero-text">
+            <p className="qa__eyebrow">⚡ Command Center</p>
+            <h2>🛡️ Quick Access</h2>
+            <p className="qa__hero-sub">
+              Real-time fleet status, threat metrics, and quick actions — your operational nerve center for PhantomWall.
+            </p>
+          </div>
+          <div className="qa__hero-actions">
+            <button
+              className={`qa__lockdown-btn ${lockdownActive ? 'qa__lockdown-btn--active' : ''}`}
+              onClick={() => {
+                setLockdownActive(prev => !prev);
+                // Navigate to Fleet Manager so user can see WAF details
+                if (!lockdownActive) {
+                  setTimeout(() => onNavigate?.('fleet'), 600);
+                }
+              }}
+            >
+              {lockdownActive ? '🔒 Lockdown' : '🔓 Lockdown'}
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                color: getFleetStatusColor(),
+              }}>
+                {fleetData.active}/{fleetData.total} Active
+              </span>
+              <button
+                onClick={handleToggleHoneypot}
+                disabled={isStarting}
+                style={{
+                  position: 'relative',
+                  width: '44px',
+                  height: '24px',
+                  borderRadius: '12px',
+                  background: honeypotStatus === 'running' ? '#10b981' : '#64748b',
+                  border: 'none',
+                  cursor: isStarting ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.3s',
+                  opacity: isStarting ? 0.5 : 1,
+                  boxShadow: honeypotStatus === 'running' ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none'
+                }}
+              >
+                <span style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: honeypotStatus === 'running' ? '22px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: 'white',
+                  transition: 'all 0.3s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}></span>
+              </button>
+            </div>
+          </div>
+        </section>
         
         {/* Honeypot Status Card */}
-        <div style={{
-          background: 'rgba(30, 41, 59, 0.6)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(100, 116, 139, 0.3)',
-          borderRadius: '1rem',
-          padding: '2.5rem',
-          marginBottom: '2.5rem',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
+        <div className="qa__fleet-card">
           <div style={{
             position: 'absolute',
             inset: 0,
@@ -181,46 +287,32 @@ const QuickAccess = () => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '2.5rem'
+              justifyContent: 'center',
+              gap: '1rem',
+              marginBottom: '1.25rem'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{
-                  width: '3rem',
-                  height: '3rem',
-                  background: honeypotStatus === 'running' 
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  boxShadow: honeypotStatus === 'running' ? '0 0 20px rgba(16, 185, 129, 0.4)' : 'none'
-                }}>
-                  🛡️
-                </div>
-                <h2 style={{
-                  fontSize: '1.5rem',
-                  fontWeight: 'bold',
-                  color: 'white',
-                  marginBottom: '0.25rem'
-                }}>
-                  Fleet Status
-                </h2>
-                <div style={{
-                  fontSize: '0.85rem',
-                  color: getFleetStatusColor(),
-                  fontWeight: 500
-                }}>
-                  {getFleetStatusText()}
-                </div>
+              <div style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                background: honeypotStatus === 'running' 
+                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                  : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.25rem',
+                boxShadow: honeypotStatus === 'running' ? '0 0 20px rgba(16, 185, 129, 0.4)' : 'none'
+              }}>
+                🛡️
               </div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                {/* Status Pips */}
-                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                  {[...Array(fleetData.total)].map((_, i) => (
+              <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>Fleet Status</span>
+              <span style={{ fontSize: '0.85rem', color: getFleetStatusColor(), fontWeight: 500 }}>
+                {getFleetStatusText()}
+              </span>
+              {/* Status Pips */}
+              <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', marginLeft: '0.5rem' }}>
+                {[...Array(fleetData.total)].map((_, i) => (
                     <div
                       key={i}
                       style={{
@@ -234,52 +326,12 @@ const QuickAccess = () => {
                     ></div>
                   ))}
                 </div>
-                
-                <span style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.05em',
-                  color: getFleetStatusColor(),
-                  textShadow: honeypotStatus === 'running' ? '0 0 10px rgba(16, 185, 129, 0.3)' : 'none'
-                }}>
-                  {fleetData.active}/{fleetData.total} Active
-                </span>
-                
-                <button
-                  onClick={handleToggleHoneypot}
-                  disabled={isStarting}
-                  style={{
-                    position: 'relative',
-                    width: '44px',
-                    height: '24px',
-                    borderRadius: '12px',
-                    background: honeypotStatus === 'running' ? '#10b981' : '#64748b',
-                    border: 'none',
-                    cursor: isStarting ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.3s',
-                    opacity: isStarting ? 0.5 : 1,
-                    boxShadow: honeypotStatus === 'running' ? '0 0 15px rgba(16, 185, 129, 0.4)' : 'none'
-                  }}
-                >
-                  <span style={{
-                    position: 'absolute',
-                    top: '2px',
-                    left: honeypotStatus === 'running' ? '22px' : '2px',
-                    width: '20px',
-                    height: '20px',
-                    borderRadius: '50%',
-                    background: 'white',
-                    transition: 'all 0.3s',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                  }}></span>
-                </button>
-              </div>
             </div>
 
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '2rem'
+              gap: '1.25rem'
             }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ 
@@ -309,7 +361,7 @@ const QuickAccess = () => {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent'
                   }}>
-                    {honeypotStatus === 'running' ? '24h 17m' : '00h 00m'}
+                    {honeypotStatus === 'running' ? getUptime() : '00h 00m'}
                   </div>
                 </div>
               </div>
@@ -342,7 +394,7 @@ const QuickAccess = () => {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent'
                   }}>
-                    {honeypotStatus === 'running' ? '8' : '0'}
+                    {honeypotStatus === 'running' ? fleetData.active : '0'}
                   </div>
                 </div>
               </div>
@@ -375,7 +427,7 @@ const QuickAccess = () => {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent'
                   }}>
-                    {honeypotStatus === 'running' ? '247' : '0'}
+                    {honeypotStatus === 'running' ? (metrics?.metrics?.events_24h ?? '0') : '0'}
                   </div>
                 </div>
               </div>
@@ -404,21 +456,10 @@ const QuickAccess = () => {
         </div>
 
         {/* Main Content Area - Dims when system is paused */}
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {/* System Paused Overlay */}
           {honeypotStatus === 'stopped' && (
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 100,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '1rem',
-              border: '2px dashed rgba(239, 68, 68, 0.3)'
-            }}>
+            <div className="qa__paused-overlay">
               <div style={{ textAlign: 'center' }}>
                 <div style={{
                   fontSize: '3rem',
@@ -443,26 +484,9 @@ const QuickAccess = () => {
           )}
 
         {/* Threat Stats Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '2rem',
-          marginBottom: '2.5rem'
-        }}>
+        <div className="qa__stat-grid">
           {/* Attacks Today */}
-          <div style={{
-            background: 'rgba(30, 41, 59, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(100, 116, 139, 0.3)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'all 0.3s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)'}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(100, 116, 139, 0.3)'}
-          >
+          <div className="qa__stat-card qa__stat-card--red">
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -519,19 +543,7 @@ const QuickAccess = () => {
           </div>
 
           {/* Unique IPs */}
-          <div style={{
-            background: 'rgba(30, 41, 59, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(100, 116, 139, 0.3)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'all 0.3s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.5)'}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(100, 116, 139, 0.3)'}
-          >
+          <div className="qa__stat-card qa__stat-card--cyan">
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -576,19 +588,7 @@ const QuickAccess = () => {
           </div>
 
           {/* Top Threat Type */}
-          <div style={{
-            background: 'rgba(30, 41, 59, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(100, 116, 139, 0.3)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            position: 'relative',
-            overflow: 'hidden',
-            transition: 'all 0.3s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)'}
-          onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(100, 116, 139, 0.3)'}
-          >
+          <div className="qa__stat-card qa__stat-card--purple">
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -614,14 +614,19 @@ const QuickAccess = () => {
                 backdropFilter: 'blur(8px)',
                 border: '1px solid rgba(100, 116, 139, 0.3)',
                 borderRadius: '0.75rem',
-                padding: '0.75rem 1rem',
-                boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(139, 92, 246, 0.08)'
+                padding: '1.25rem 1rem',
+                boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(139, 92, 246, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '3.75rem'
               }}>
                 <div style={{
-                  fontSize: '1.125rem',
+                  fontSize: '1rem',
                   fontWeight: 'bold',
                   color: 'white',
                   textAlign: 'center',
+                  lineHeight: 1.3,
                   background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent'
@@ -634,22 +639,9 @@ const QuickAccess = () => {
         </div>
 
         {/* Bottom Grid: Alerts Feed + Top Attack Origins */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '2rem',
-          marginBottom: '2.5rem'
-        }}>
+        <div className="qa__bottom-grid">
           {/* Live Alert Feed */}
-          <div style={{
-            background: 'rgba(30, 41, 59, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(100, 116, 139, 0.3)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
+          <div className="qa__panel">
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -661,7 +653,7 @@ const QuickAccess = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
-                marginBottom: '2rem'
+                marginBottom: '1.25rem'
               }}>
                 <span style={{ fontSize: '1.25rem' }}>📡</span>
                 <h2 style={{
@@ -756,15 +748,7 @@ const QuickAccess = () => {
           </div>
 
           {/* Top Attack Origins */}
-          <div style={{
-            background: 'rgba(30, 41, 59, 0.6)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(100, 116, 139, 0.3)',
-            borderRadius: '1rem',
-            padding: '2rem',
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
+          <div className="qa__panel">
             <div style={{
               position: 'absolute',
               inset: 0,
@@ -776,7 +760,7 @@ const QuickAccess = () => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.75rem',
-                marginBottom: '2rem'
+                marginBottom: '1.25rem'
               }}>
                 <span style={{ fontSize: '1.25rem' }}>🌐</span>
                 <h2 style={{
@@ -868,82 +852,8 @@ const QuickAccess = () => {
         </div>
 
         {/* Quick Actions */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1.5rem',
-          marginBottom: '2.5rem'
-        }}>
-          <button
-            style={{
-              background: 'rgba(30, 41, 59, 0.6)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(100, 116, 139, 0.3)',
-              borderRadius: '1rem',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.5)';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(6, 182, 212, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(100, 116, 139, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.75rem'
-            }}>
-              <div style={{
-                padding: '0.5rem',
-                borderRadius: '0.5rem',
-                background: 'rgba(6, 182, 212, 0.1)',
-                border: '1px solid rgba(6, 182, 212, 0.2)'
-              }}>
-                <span style={{ fontSize: '1.25rem' }}>🎯</span>
-              </div>
-              <span style={{
-                color: 'white',
-                fontWeight: 600,
-                fontSize: '0.9rem'
-              }}>
-                Threat Intelligence
-              </span>
-            </div>
-          </button>
-
-          <button
-            style={{
-              background: 'rgba(30, 41, 59, 0.6)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(100, 116, 139, 0.3)',
-              borderRadius: '1rem',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(239, 68, 68, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(100, 116, 139, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
+        <div className="qa__actions-grid">
+          <button className="qa__action-btn qa__action-btn--red" onClick={() => onNavigate?.('alerts-ledger')}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -956,41 +866,44 @@ const QuickAccess = () => {
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.2)'
               }}>
-                <span style={{ fontSize: '1.25rem' }}>🗺️</span>
+                <span style={{ fontSize: '1.25rem' }}>🔔</span>
               </div>
               <span style={{
                 color: 'white',
                 fontWeight: 600,
                 fontSize: '0.9rem'
               }}>
-                Live Attack Map
+                Alerts & Investigation
               </span>
             </div>
           </button>
 
-          <button
-            style={{
-              background: 'rgba(30, 41, 59, 0.6)',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(100, 116, 139, 0.3)',
-              borderRadius: '1rem',
-              padding: '1.5rem',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.5)';
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 8px 16px rgba(139, 92, 246, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(100, 116, 139, 0.3)';
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
+          <button className="qa__action-btn qa__action-btn--cyan" onClick={() => onNavigate?.('fleet')}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem'
+            }}>
+              <div style={{
+                padding: '0.5rem',
+                borderRadius: '0.5rem',
+                background: 'rgba(6, 182, 212, 0.1)',
+                border: '1px solid rgba(6, 182, 212, 0.2)'
+              }}>
+                <span style={{ fontSize: '1.25rem' }}>🎛️</span>
+              </div>
+              <span style={{
+                color: 'white',
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}>
+                Fleet Manager
+              </span>
+            </div>
+          </button>
+
+          <button className="qa__action-btn qa__action-btn--purple" onClick={() => onNavigate?.('intel')}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1003,14 +916,14 @@ const QuickAccess = () => {
                 background: 'rgba(139, 92, 246, 0.1)',
                 border: '1px solid rgba(139, 92, 246, 0.2)'
               }}>
-                <span style={{ fontSize: '1.25rem' }}>🛡️</span>
+                <span style={{ fontSize: '1.25rem' }}>🌍</span>
               </div>
               <span style={{
                 color: 'white',
                 fontWeight: 600,
                 fontSize: '0.9rem'
               }}>
-                Security Posture
+                Intel & Analytics
               </span>
             </div>
           </button>
@@ -1019,17 +932,8 @@ const QuickAccess = () => {
         </div> {/* End of dimmed content wrapper */}
 
         {/* Footer */}
-        <div style={{
-          borderTop: '1px solid rgba(100, 116, 139, 0.2)',
-          paddingTop: '2rem',
-          marginTop: '2rem'
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '2rem',
-            marginBottom: '2rem'
-          }}>
+        <div className="qa__footer">
+          <div className="qa__footer-grid">
             <div>
               <h3 style={{
                 fontSize: '1.25rem',
@@ -1087,11 +991,7 @@ const QuickAccess = () => {
             </div>
           </div>
 
-          <div style={{
-            textAlign: 'center',
-            paddingTop: '1.5rem',
-            borderTop: '1px solid rgba(100, 116, 139, 0.2)'
-          }}>
+          <div className="qa__footer-copy">
             <p style={{
               fontSize: '0.875rem',
               color: '#64748b'
@@ -1101,28 +1001,6 @@ const QuickAccess = () => {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        
-        @keyframes criticalPulse {
-          0%, 100% {
-            background: rgba(15, 23, 42, 0.5);
-            box-shadow: 0 0 0 rgba(239, 68, 68, 0);
-          }
-          50% {
-            background: rgba(239, 68, 68, 0.08);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
-          }
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import './components/TrafficView.css';
 
 const randomIp = () =>
   `${Math.floor(Math.random() * 223) + 1}.${Math.floor(Math.random() * 255)}.${Math.floor(
@@ -153,43 +154,35 @@ export default function TrafficView() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100dvh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        padding: '2rem 2.5rem',
-        color: '#e2e8f0',
-      }}
-    >
-      <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gap: '1.25rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h2 style={{ margin: 0, color: '#fff' }}>Traffic Ledger - Forensics Preview</h2>
-            <p style={{ margin: '0.35rem 0 0', color: '#94a3b8', fontSize: '0.9rem' }}>Live network telemetry stream simulation</p>
-          </div>
-          <button
-            onClick={() => setLive((v) => !v)}
-            style={{
-              border: '1px solid rgba(100, 116, 139, 0.4)',
-              background: live ? 'rgba(6, 182, 212, 0.15)' : 'rgba(15, 23, 42, 0.45)',
-              color: live ? '#67e8f9' : '#cbd5e1',
-              borderRadius: '0.5rem',
-              padding: '0.5rem 0.75rem',
-              cursor: 'pointer',
-              fontWeight: 700,
-            }}
-          >
-            {live ? 'Live' : 'Paused'}
-          </button>
-        </div>
+    <div className="traffic">
+      <div className="traffic__shell">
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
+        {/* ── Hero ──────────────────────────────────────────── */}
+        <section className="traffic__hero">
+          <div className="traffic__hero-text">
+            <p className="traffic__eyebrow">📡 Network Telemetry</p>
+            <h2>🔍 Traffic Ledger</h2>
+            <p className="traffic__hero-sub">
+              Live network telemetry stream simulation — inspect packets, filter by protocol, and trigger response actions.
+            </p>
+          </div>
+          <div className="traffic__hero-actions">
+            <button
+              onClick={() => setLive((v) => !v)}
+              className={`traffic__live-btn ${live ? 'traffic__live-btn--active' : 'traffic__live-btn--paused'}`}
+            >
+              {live ? 'Live' : 'Paused'}
+            </button>
+          </div>
+        </section>
+
+        <div className="traffic__stat-grid">
           {[
             { label: 'Packets/s', value: stats.pps },
             { label: 'Unique IPs', value: stats.unique },
             { label: 'Blocked', value: stats.blocked },
           ].map((s) => (
-            <div key={s.label} style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 116, 139, 0.3)', borderRadius: '0.8rem', padding: '0.75rem' }}>
+            <div key={s.label} className="traffic__stat-card">
               <div style={{ background: 'rgba(2, 6, 23, 0.6)', border: '1px solid rgba(100, 116, 139, 0.28)', borderRadius: '0.65rem', padding: '0.6rem 0.75rem', boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.45)' }}>
                 <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
                 <div style={{ marginTop: '0.45rem', color: '#fff', fontWeight: 700, fontSize: '1.8rem', lineHeight: 1 }}>{s.value}</div>
@@ -198,7 +191,7 @@ export default function TrafficView() {
           ))}
         </div>
 
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 116, 139, 0.3)', borderRadius: '0.8rem', padding: '0.75rem' }}>
+        <div className="traffic__panel">
           <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
             <input
               type="search"
@@ -313,7 +306,7 @@ export default function TrafficView() {
           </div>
         </div>
 
-        <div style={{ background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(100, 116, 139, 0.3)', borderRadius: '0.8rem', padding: '0.75rem' }}>
+        <div className="traffic__actions-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
             <h3 style={{ margin: 0, color: '#fff', fontSize: '0.95rem' }}>Recent Response Actions</h3>
             <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>Mock workflow</span>

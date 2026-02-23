@@ -1,0 +1,832 @@
+/* ═══════════════════════════════════════════════════════════════
+   Intel & Analytics — PhantomWall Ultra-Dark Theme
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page Shell ─────────────────────────────────────────────── */
+.intel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #070b14 0%, #0c1220 40%, #0f172a 70%, #0c1220 100%);
+  padding: 2rem 2.5rem;
+  color: #e2e8f0;
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.intel__hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(24px);
+  border-radius: 1rem;
+  padding: 2rem 2rem 1.75rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.intel__hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06) 0%, rgba(6, 182, 212, 0.04) 100%);
+  pointer-events: none;
+}
+
+.intel__hero::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.3), rgba(139, 92, 246, 0.3), transparent);
+}
+
+.intel__hero-text { position: relative; }
+
+.intel__eyebrow {
+  margin: 0 0 0.3rem;
+  color: #a78bfa;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.intel__hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  position: relative;
+}
+
+.intel__hero-sub {
+  margin: 0.5rem 0 0;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  max-width: 640px;
+  position: relative;
+}
+
+/* Hero right actions stack */
+.intel__hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Threat Level Indicator */
+.intel__threat-level {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid color-mix(in srgb, var(--threat-color, #06b6d4) 40%, transparent);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+}
+
+.intel__threat-level-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--threat-color, #06b6d4);
+  box-shadow: 0 0 8px var(--threat-color, #06b6d4);
+  animation: intel-pulse-dot 1.8s ease-in-out infinite;
+}
+
+.intel__threat-level-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--threat-color, #06b6d4);
+}
+
+/* Refresh row */
+.intel__refresh-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.intel__refresh-btn {
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  background: rgba(15, 23, 42, 0.5);
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.intel__refresh-btn:hover {
+  color: #06b6d4;
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.intel__refresh-cd {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #475569;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  min-width: 24px;
+}
+
+.intel__last-updated {
+  font-size: 0.68rem;
+  color: #475569;
+}
+
+/* ── Range Toggle ────────────────────────────────────────── */
+.intel__range-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(7, 11, 20, 0.7);
+  border: 1px solid rgba(100, 116, 139, 0.25);
+  border-radius: 999px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+
+.intel__range-btn {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.intel__range-btn:hover { color: #e2e8f0; }
+
+.intel__range-btn--active {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.45);
+}
+
+/* ── KPI Strip ───────────────────────────────────────────── */
+.intel__kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.intel__kpi {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 160px;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.intel__kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--kpi-accent, #06b6d4), transparent);
+  opacity: 0.5;
+}
+
+.intel__kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3), inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.intel__kpi-icon { font-size: 1.4rem; }
+
+.intel__kpi-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.intel__kpi-value {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--kpi-accent, #06b6d4);
+  line-height: 1.1;
+}
+
+.intel__kpi-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+}
+
+.intel__kpi-trend {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+/* ── Generic Card ────────────────────────────────────────── */
+.intel__card {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.18);
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.intel__card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.intel__card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 10%, rgba(6, 182, 212, 0.2) 50%, transparent 90%);
+  pointer-events: none;
+}
+
+.intel__card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+  background: rgba(7, 11, 20, 0.35);
+}
+
+.intel__card-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.intel__card-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: rgba(7, 11, 20, 0.5);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+.intel__card-badge--live {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.intel__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: intel-pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* ── Grid Layouts ────────────────────────────────────────── */
+.intel__grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.intel__grid--map {
+  grid-template-columns: 2fr 1fr;
+}
+
+.intel__grid--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ── Map ─────────────────────────────────────────────────── */
+.intel__card--map {
+  min-height: 400px;
+}
+
+.intel__map-wrap {
+  height: 420px;
+  position: relative;
+  overflow: hidden;
+}
+
+.intel__map {
+  width: 100%;
+  height: 100%;
+  background: #f0ede6;
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* Vignette overlay — subtle dark edges */
+.intel__map-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 450;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(15, 23, 42, 0.45) 100%);
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* CRT-style scanlines */
+.intel__map-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 451;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.04) 2px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  border-radius: 0 0 1rem 1rem;
+}
+
+/* Map Legend */
+.intel__map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 500;
+  display: flex;
+  gap: 0.65rem;
+  background: rgba(7, 11, 20, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+}
+
+.intel__map-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.intel__map-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Leaflet dark overrides */
+.intel__map .leaflet-control-zoom a {
+  background: rgba(7, 11, 20, 0.9);
+  color: #94a3b8;
+  border-color: rgba(100, 116, 139, 0.2);
+}
+
+.intel__map .leaflet-control-zoom a:hover {
+  color: #06b6d4;
+}
+
+.intel__map .leaflet-control-attribution {
+  background: rgba(7, 11, 20, 0.8) !important;
+  color: #475569 !important;
+  font-size: 0.58rem !important;
+}
+
+.intel__map .leaflet-control-attribution a {
+  color: #64748b !important;
+}
+
+.intel__map-tooltip {
+  background: rgba(7, 11, 20, 0.95) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
+  font-size: 0.78rem !important;
+  padding: 0.4rem 0.6rem !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+.intel__map-tooltip::before {
+  border-top-color: rgba(6, 182, 212, 0.4) !important;
+}
+
+/* Pulse animation on SVG markers */
+.intel__marker-pulse {
+  animation: intel-marker-ring 2.2s ease-out infinite;
+}
+
+@keyframes intel-marker-ring {
+  0% { stroke-opacity: 0.6; fill-opacity: 0.18; }
+  50% { stroke-opacity: 0.15; fill-opacity: 0.04; }
+  100% { stroke-opacity: 0.6; fill-opacity: 0.18; }
+}
+
+/* ── Top Origins ─────────────────────────────────────────── */
+.intel__card--origins {
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+.intel__origins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Custom scrollbar */
+.intel__origins-list::-webkit-scrollbar {
+  width: 4px;
+}
+.intel__origins-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.intel__origins-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 999px;
+}
+
+.intel__origin {
+  display: grid;
+  grid-template-columns: 24px 28px 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  transition: background 0.15s;
+}
+
+.intel__origin:hover {
+  background: rgba(6, 182, 212, 0.06);
+}
+
+.intel__origin-rank {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #334155;
+  text-align: center;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.intel__origin-flag { font-size: 1.1rem; }
+
+.intel__origin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.intel__origin-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.intel__origin-bar-track {
+  height: 4px;
+  background: rgba(100, 116, 139, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.intel__origin-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.intel__origin-count {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  text-align: right;
+  min-width: 36px;
+}
+
+.intel__origin-pct {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #475569;
+  text-align: right;
+  min-width: 36px;
+}
+
+/* ── Chart Containers ────────────────────────────────────── */
+.intel__chart-wrap {
+  padding: 0.75rem 1rem;
+}
+
+/* Recharts overrides */
+.intel__chart-wrap .recharts-text {
+  fill: #64748b;
+}
+
+.intel__chart-wrap .recharts-cartesian-grid-horizontal line,
+.intel__chart-wrap .recharts-cartesian-grid-vertical line {
+  stroke: rgba(100, 116, 139, 0.1);
+}
+
+.intel__chart-wrap .recharts-legend-item-text {
+  color: #94a3b8 !important;
+}
+
+.intel__chart-wrap .recharts-pie-label-text {
+  fill: #94a3b8;
+  font-size: 0.7rem;
+}
+
+/* Chart Tooltip */
+.intel__chart-tip {
+  background: rgba(7, 11, 20, 0.95);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.intel__chart-tip p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.intel__chart-tip-label {
+  color: #94a3b8 !important;
+  font-weight: 600;
+  margin-bottom: 0.2rem !important;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+  padding-bottom: 0.2rem;
+}
+
+/* ── Top Attackers Table ─────────────────────────────────── */
+.intel__attackers-table-wrap {
+  overflow-x: auto;
+}
+
+.intel__attackers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.intel__attackers-table thead th {
+  background: rgba(7, 11, 20, 0.45);
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.intel__attacker-row {
+  transition: background 0.15s;
+}
+
+.intel__attacker-row:hover {
+  background: rgba(6, 182, 212, 0.05);
+}
+
+.intel__attacker-row td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.08);
+  vertical-align: middle;
+}
+
+.intel__attacker-rank {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #334155;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  text-align: center;
+  width: 28px;
+}
+
+.intel__attacker-ip code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
+  color: #67e8f9;
+}
+
+.intel__attacker-origin {
+  white-space: nowrap;
+  color: #94a3b8;
+}
+
+.intel__attacker-count {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.intel__attacker-bar-track {
+  display: inline-block;
+  width: 60px;
+  height: 4px;
+  background: rgba(100, 116, 139, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+.intel__attacker-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.intel__attacker-pct {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.intel__threat-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Error ───────────────────────────────────────────────── */
+.intel__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fca5a5;
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+}
+
+.intel__error-icon { font-size: 1.2rem; }
+
+.intel__error strong {
+  display: block;
+  color: #fecaca;
+  font-size: 0.88rem;
+  margin-bottom: 0.2rem;
+}
+
+.intel__error p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+/* ── Loading ─────────────────────────────────────────────── */
+.intel__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 1rem;
+}
+
+.intel__loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(6, 182, 212, 0.15);
+  border-top-color: #06b6d4;
+  border-radius: 50%;
+  animation: intel-spin 0.8s linear infinite;
+}
+
+.intel__loading p {
+  margin: 0;
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.intel__loading-hint {
+  color: #475569 !important;
+  font-weight: 500 !important;
+  font-size: 0.82rem !important;
+}
+
+/* ── Empty State ─────────────────────────────────────────── */
+.intel__empty {
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  padding: 3rem;
+  text-align: center;
+}
+
+.intel__empty-icon {
+  font-size: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.intel__empty h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.intel__empty p {
+  margin: 0.6rem auto 0;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  max-width: 420px;
+}
+
+.intel__empty-hint {
+  color: #475569 !important;
+  font-size: 0.82rem !important;
+}
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes intel-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes intel-pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+  50% { opacity: 0.4; box-shadow: 0 0 12px currentColor; }
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .intel__grid--map {
+    grid-template-columns: 1fr;
+  }
+  .intel__card--origins {
+    max-height: none;
+  }
+  .intel__grid--three {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .intel {
+    padding: 1rem;
+  }
+  .intel__hero {
+    flex-direction: column;
+  }
+  .intel__hero-actions {
+    align-items: flex-start;
+  }
+  .intel__kpis {
+    flex-direction: column;
+  }
+  .intel__grid--three {
+    grid-template-columns: 1fr;
+  }
+  .intel__map-wrap {
+    height: 280px;
+  }
+}

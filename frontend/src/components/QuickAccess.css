@@ -1,0 +1,338 @@
+/* ═══════════════════════════════════════════════════════════════
+   Quick Access / Command Center — PhantomWall Dark Theme
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page Shell ─────────────────────────────────────────────── */
+.qa {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 100vh;
+  background: linear-gradient(145deg, #070b14 0%, #0c1220 40%, #0f172a 70%, #0c1220 100%);
+  padding: 2rem 2.5rem;
+  color: #e2e8f0;
+}
+
+.qa__shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+/* ── Hero ────────────────────────────────────────────────────── */
+.qa__hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(24px);
+  border-radius: 1rem;
+  padding: 2rem 2rem 1.75rem;
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.qa__hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(139, 92, 246, 0.04) 100%);
+  pointer-events: none;
+}
+
+.qa__hero::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.35), rgba(139, 92, 246, 0.3), transparent);
+}
+
+.qa__hero-text { position: relative; }
+
+.qa__eyebrow {
+  margin: 0 0 0.3rem;
+  color: #22d3ee;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.qa__hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  position: relative;
+}
+
+.qa__hero-sub {
+  margin: 0.5rem 0 0;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  max-width: 660px;
+  position: relative;
+}
+
+.qa__hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* ── Master Lockdown Button ─────────────────────────────────── */
+.qa__lockdown-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 0.65rem;
+  background: rgba(15, 23, 42, 0.5);
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.qa__lockdown-btn:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.qa__lockdown-btn--active {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.2);
+  animation: qa-lockdown-pulse 2s ease-in-out infinite;
+}
+
+@keyframes qa-lockdown-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.2); }
+  50% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.4); }
+}
+
+/* ── Fleet Status Card ──────────────────────────────────────── */
+.qa__fleet-card {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.qa__fleet-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%);
+  pointer-events: none;
+}
+
+/* ── Stat Cards ─────────────────────────────────────────────── */
+.qa__stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.qa__stat-card {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+}
+
+.qa__stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.qa__stat-card--red:hover   { border-color: rgba(239, 68, 68, 0.5); }
+.qa__stat-card--cyan:hover  { border-color: rgba(6, 182, 212, 0.5); }
+.qa__stat-card--purple:hover{ border-color: rgba(139, 92, 246, 0.5); }
+
+/* ── Content Panels ─────────────────────────────────────────── */
+.qa__panel {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s;
+  min-height: 200px;
+}
+
+.qa__panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.05) 0%, rgba(71, 85, 105, 0.05) 100%);
+  pointer-events: none;
+}
+
+/* ── Bottom 2-col Grid ──────────────────────────────────────── */
+.qa__bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+/* ── Quick Actions ──────────────────────────────────────────── */
+.qa__actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.qa__action-btn {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 1rem;
+  padding: 1.25rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+}
+
+.qa__action-btn:hover {
+  transform: translateY(-4px);
+}
+
+.qa__action-btn--cyan:hover {
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 8px 16px rgba(6, 182, 212, 0.2);
+}
+
+.qa__action-btn--red:hover {
+  border-color: rgba(239, 68, 68, 0.5);
+  box-shadow: 0 8px 16px rgba(239, 68, 68, 0.2);
+}
+
+.qa__action-btn--purple:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 8px 16px rgba(139, 92, 246, 0.2);
+}
+
+/* Arrow indicator on action buttons */
+.qa__action-btn::after {
+  content: '→';
+  position: absolute;
+  right: 1.25rem;
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  opacity: 0;
+  color: #94a3b8;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.qa__action-btn:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.qa__footer {
+  border-top: 1px solid rgba(100, 116, 139, 0.15);
+  padding-top: 1.75rem;
+  margin-top: 0.5rem;
+}
+
+.qa__footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.qa__footer-copy {
+  text-align: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(100, 116, 139, 0.15);
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+/* ── Inset Number Display ───────────────────────────────────── */
+.qa__inset {
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.28);
+  border-radius: 0.65rem;
+  padding: 0.75rem 1rem;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+/* ── System Paused Overlay ──────────────────────────────────── */
+.qa__paused-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 2px dashed rgba(239, 68, 68, 0.3);
+}
+
+/* ── Keyframes ──────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
+
+@keyframes criticalPulse {
+  0%, 100% {
+    background: rgba(15, 23, 42, 0.5);
+    box-shadow: 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% {
+    background: rgba(239, 68, 68, 0.08);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+  }
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .qa__bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .qa__stat-grid,
+  .qa__actions-grid,
+  .qa__footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .qa {
+    padding: 1.25rem;
+  }
+}

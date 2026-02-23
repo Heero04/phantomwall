@@ -184,3 +184,33 @@ variable "budget_alert_email" {
   type        = string
   default     = ""
 }
+
+# ----------------------------------------------------------
+#            WAF Configuration
+# ----------------------------------------------------------
+# Purpose: Controls Web Application Firewall settings
+# ----------------------------------------------------------
+
+variable "waf_enabled" {
+  description = "Enable the WAF Web ACL and all associated rules"
+  type        = bool
+  default     = true
+}
+
+variable "waf_rate_limit" {
+  description = "Maximum requests per 5-minute window before rate limiting kicks in"
+  type        = number
+  default     = 2000
+}
+
+variable "waf_geo_block_countries" {
+  description = "ISO 3166-1 alpha-2 country codes to block (e.g. ['CN', 'RU', 'KP'])"
+  type        = list(string)
+  default     = []
+}
+
+variable "waf_enable_bot_control" {
+  description = "Enable AWS WAF Bot Control managed rule group (adds cost)"
+  type        = bool
+  default     = false
+}
