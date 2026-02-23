@@ -8,6 +8,8 @@ terraform.tfvars
 terraform.tfstate.d/
 output.tfstate
 *.tfplan
+tfplan
+tfplan-*
 
 # Private business strategy (DO NOT COMMIT)
 BUSINESS-STRATEGY-PRIVATE.md
