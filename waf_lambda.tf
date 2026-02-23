@@ -45,6 +45,8 @@ resource "aws_iam_role_policy" "waf_api" {
           aws_wafv2_web_acl.main[0].arn,
           aws_wafv2_ip_set.blocklist[0].arn,
           aws_wafv2_ip_set.allowlist[0].arn,
+          # UpdateWebACL requires permission on managed rule set references
+          "arn:aws:wafv2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:regional/managedruleset/*/*",
         ]
       },
       {

@@ -128,11 +128,10 @@ def _handle_toggle_rule(body):
     for rule in rules:
         if rule["Name"] == waf_rule_name:
             found = True
-            # Managed rules (override_action) vs custom rules (action)
+            # Managed rules (OverrideAction) vs custom rules (Action)
             if "OverrideAction" in rule:
-                rule["OverrideAction"] = {} if enabled else {"Count": {}}
                 if enabled:
-                    rule["OverrideAction"]["None"] = {}
+                    rule["OverrideAction"] = {"None": {}}
                 else:
                     rule["OverrideAction"] = {"Count": {}}
             elif "Action" in rule:
@@ -145,15 +144,19 @@ def _handle_toggle_rule(body):
     if not found:
         return _response(404, {"error": f"Rule '{waf_rule_name}' not found in Web ACL"})
 
-    _wafv2.update_web_acl(
-        Name=WEB_ACL_NAME,
-        Scope=SCOPE,
-        Id=WEB_ACL_ID,
-        DefaultAction=web_acl["DefaultAction"],
-        Rules=rules,
-        VisibilityConfig=web_acl["VisibilityConfig"],
-        LockToken=lock_token,
-    )
+    try:
+        _wafv2.update_web_acl(
+            Name=WEB_ACL_NAME,
+            Scope=SCOPE,
+            Id=WEB_ACL_ID,
+            DefaultAction=web_acl["DefaultAction"],
+            Rules=rules,
+            VisibilityConfig=web_acl["VisibilityConfig"],
+            LockToken=lock_token,
+        )
+    except Exception as e:
+        logger.error(f"UpdateWebACL failed: {e}")
+        return _response(500, {"error": f"Failed to update Web ACL: {str(e)}"})
 
     logger.info(f"Rule {waf_rule_name} set to {'ACTIVE' if enabled else 'COUNT'}")
     return _response(200, {

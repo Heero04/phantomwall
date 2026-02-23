@@ -355,11 +355,8 @@ const QuickAccess = ({ onNavigate }) => {
                   <div style={{
                     fontSize: '2rem',
                     fontWeight: 'bold',
-                    background: honeypotStatus === 'running' 
-                      ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                      : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
+                    color: honeypotStatus === 'running' ? '#10b981' : '#64748b',
+                    textShadow: honeypotStatus === 'running' ? '0 0 20px rgba(16, 185, 129, 0.4)' : 'none'
                   }}>
                     {honeypotStatus === 'running' ? getUptime() : '00h 00m'}
                   </div>
@@ -388,11 +385,8 @@ const QuickAccess = ({ onNavigate }) => {
                   <div style={{
                     fontSize: '2rem',
                     fontWeight: 'bold',
-                    background: honeypotStatus === 'running'
-                      ? 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
-                      : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
+                    color: honeypotStatus === 'running' ? '#06b6d4' : '#64748b',
+                    textShadow: honeypotStatus === 'running' ? '0 0 20px rgba(6, 182, 212, 0.4)' : 'none'
                   }}>
                     {honeypotStatus === 'running' ? fleetData.active : '0'}
                   </div>
@@ -421,11 +415,8 @@ const QuickAccess = ({ onNavigate }) => {
                   <div style={{
                     fontSize: '2rem',
                     fontWeight: 'bold',
-                    background: honeypotStatus === 'running'
-                      ? 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
-                      : 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
+                    color: honeypotStatus === 'running' ? '#8b5cf6' : '#64748b',
+                    textShadow: honeypotStatus === 'running' ? '0 0 20px rgba(139, 92, 246, 0.4)' : 'none'
                   }}>
                     {honeypotStatus === 'running' ? (metrics?.metrics?.events_24h ?? '0') : '0'}
                   </div>
@@ -530,11 +521,9 @@ const QuickAccess = ({ onNavigate }) => {
                 <div style={{
                   fontSize: '2.25rem',
                   fontWeight: 'bold',
-                  color: 'white',
+                  color: '#f1f5f9',
                   textAlign: 'center',
-                  background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
+                  textShadow: '0 0 20px rgba(239, 68, 68, 0.3)'
                 }}>
                   {stats.todayAttacks}
                 </div>
@@ -575,11 +564,9 @@ const QuickAccess = ({ onNavigate }) => {
                 <div style={{
                   fontSize: '2.25rem',
                   fontWeight: 'bold',
-                  color: 'white',
+                  color: '#f1f5f9',
                   textAlign: 'center',
-                  background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
+                  textShadow: '0 0 20px rgba(6, 182, 212, 0.3)'
                 }}>
                   {stats.uniqueIPs}
                 </div>
@@ -624,12 +611,10 @@ const QuickAccess = ({ onNavigate }) => {
                 <div style={{
                   fontSize: '1rem',
                   fontWeight: 'bold',
-                  color: 'white',
+                  color: '#f1f5f9',
                   textAlign: 'center',
                   lineHeight: 1.3,
-                  background: 'linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent'
+                  textShadow: '0 0 20px rgba(139, 92, 246, 0.3)'
                 }}>
                   {stats.topThreat}
                 </div>
