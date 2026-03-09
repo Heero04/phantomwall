@@ -228,7 +228,7 @@ function AZBar({ fleet }) {
 }
 
 /* ── Instance Card (for card view) ────────────────────────────── */
-function InstanceCard({ item, busyAction, onAction }) {
+function InstanceCard({ item, busyAction, onAction, onDestroy }) {
   const hc = healthCheckLabel(item.health_checks)
   const cpu = clampPct(item.cpu)
   const ram = clampPct(item.ram)
@@ -316,6 +316,15 @@ function InstanceCard({ item, busyAction, onAction }) {
             </button>
           )
         })}
+        <button
+          type="button"
+          className="fleet__action-btn fleet__action-btn--destroy"
+          disabled={Boolean(busyAction)}
+          onClick={() => onDestroy(item)}
+          title="Terminate this honeypot permanently"
+        >
+          {busyAction === `${item.instance_id}:destroy` ? '...' : '🗑️ DESTROY'}
+        </button>
       </div>
     </article>
   )
@@ -334,6 +343,16 @@ export default function HoneypotFleetManager() {
   const [message, setMessage] = useState('')
   const [busyAction, setBusyAction] = useState('')
   const [viewMode, setViewMode] = useState('cards') // 'cards' | 'table'
+
+  /* ── Deploy Modal State ─────────────────────────────────────── */
+  const [showDeployModal, setShowDeployModal] = useState(false)
+  const [deployConfig, setDeployConfig] = useState({
+    name: '',
+    instance_type: 't3a.small',
+    trap_profile: 'default',
+  })
+  const [deploying, setDeploying] = useState(false)
+  const [deployResult, setDeployResult] = useState(null)
 
   /* ── WAF / Edge Security State ──────────────────────────────── */
   const [wafRateLimiting, setWafRateLimiting] = useState(true)
@@ -522,6 +541,79 @@ export default function HoneypotFleetManager() {
       await refreshFleet()
     } catch (err) {
       setError(err.message)
+    } finally {
+      setBusyAction('')
+    }
+  }
+
+  /* ── Deploy a new honeypot ──────────────────────────────────── */
+  const handleDeploy = async () => {
+    if (!API_URL) {
+      setMessage(`Dry-run: Would deploy "${deployConfig.name || 'auto-named'}" (${deployConfig.trap_profile}) on ${deployConfig.instance_type}.`)
+      setShowDeployModal(false)
+      return
+    }
+
+    setDeploying(true)
+    setError('')
+    setMessage('')
+    setDeployResult(null)
+
+    try {
+      const response = await fetch(`${API_URL}/fleet/deploy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(deployConfig),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.error || `Deploy failed (${response.status})`)
+      }
+
+      setDeployResult(payload)
+      setMessage(`✅ Honeypot "${payload.name}" deployed — ${payload.instance_id} (${payload.current_count}/${payload.max_allowed} slots used)`)
+      // Refresh fleet list after short delay for instance to register
+      setTimeout(() => refreshFleet(), 3000)
+    } catch (err) {
+      setError(`Deploy failed: ${err.message}`)
+    } finally {
+      setDeploying(false)
+    }
+  }
+
+  /* ── Destroy / terminate a honeypot ─────────────────────────── */
+  const handleDestroy = async (instance) => {
+    const confirmed = window.confirm(
+      `⚠️ Terminate honeypot "${instance.name}" (${instance.instance_id})?\n\nThis will permanently destroy the instance.`
+    )
+    if (!confirmed) return
+
+    if (!API_URL) {
+      setMessage(`Dry-run: Would terminate ${instance.name} (${instance.instance_id}).`)
+      return
+    }
+
+    setBusyAction(`${instance.instance_id}:destroy`)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await fetch(`${API_URL}/fleet/destroy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance_id: instance.instance_id }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload.error || `Destroy failed (${response.status})`)
+      }
+
+      setMessage(`🗑️ Honeypot "${payload.name}" termination initiated.`)
+      setTimeout(() => refreshFleet(), 2000)
+    } catch (err) {
+      setError(`Destroy failed: ${err.message}`)
     } finally {
       setBusyAction('')
     }
@@ -749,6 +841,13 @@ export default function HoneypotFleetManager() {
           </label>
 
           <div className="fleet__control-buttons">
+            <button
+              type="button"
+              onClick={() => { setDeployResult(null); setShowDeployModal(true) }}
+              className="fleet__btn-deploy"
+            >
+              🚀 Deploy Honeypot
+            </button>
             <button type="button" onClick={refreshFleet} disabled={loading} className="fleet__btn-refresh">
               {loading ? 'Refreshing…' : '⟳ Refresh'}
             </button>
@@ -787,6 +886,7 @@ export default function HoneypotFleetManager() {
               item={item}
               busyAction={busyAction}
               onAction={runAction}
+              onDestroy={handleDestroy}
             />
           ))}
           {filteredFleet.length === 0 && (
@@ -927,6 +1027,131 @@ Response schema:
 POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
 { "instance_id": "i-abc123", "action": "reboot", "mode": "ssm" }`}</pre>
       </details>
+
+      {/* ── Deploy Honeypot Modal ────────────────────────────── */}
+      {showDeployModal && (
+        <div className="fleet__modal-overlay" onClick={() => !deploying && setShowDeployModal(false)}>
+          <div className="fleet__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="fleet__modal-header">
+              <h3>🚀 Deploy New Honeypot</h3>
+              <button
+                type="button"
+                className="fleet__modal-close"
+                onClick={() => !deploying && setShowDeployModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {deployResult ? (
+              <div className="fleet__modal-body">
+                <div className="fleet__deploy-success">
+                  <span className="fleet__deploy-success-icon">✅</span>
+                  <h4>Honeypot Deployed!</h4>
+                  <div className="fleet__deploy-result">
+                    <div className="fleet__deploy-result-row">
+                      <span>Instance ID</span>
+                      <code>{deployResult.instance_id}</code>
+                    </div>
+                    <div className="fleet__deploy-result-row">
+                      <span>Name</span>
+                      <strong>{deployResult.name}</strong>
+                    </div>
+                    <div className="fleet__deploy-result-row">
+                      <span>Type</span>
+                      <span>{deployResult.instance_type}</span>
+                    </div>
+                    <div className="fleet__deploy-result-row">
+                      <span>Trap Profile</span>
+                      <span>{deployResult.trap_profile}</span>
+                    </div>
+                    <div className="fleet__deploy-result-row">
+                      <span>Fleet Capacity</span>
+                      <span>{deployResult.current_count}/{deployResult.max_allowed}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="fleet__btn-deploy"
+                    onClick={() => setShowDeployModal(false)}
+                    style={{ marginTop: '1rem', width: '100%' }}
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="fleet__modal-body">
+                <label className="fleet__modal-field">
+                  <span>Honeypot Name <small>(optional — auto-generated if blank)</small></span>
+                  <input
+                    type="text"
+                    placeholder="e.g. honeypot-ssh-east"
+                    value={deployConfig.name}
+                    onChange={(e) => setDeployConfig(c => ({ ...c, name: e.target.value }))}
+                    disabled={deploying}
+                  />
+                </label>
+
+                <label className="fleet__modal-field">
+                  <span>Trap Profile</span>
+                  <select
+                    value={deployConfig.trap_profile}
+                    onChange={(e) => setDeployConfig(c => ({ ...c, trap_profile: e.target.value }))}
+                    disabled={deploying}
+                  >
+                    <option value="default">🔲 Standard (22, 80, 443, 23, 2222, 8080)</option>
+                    <option value="ssh">🔑 SSH (Port 22)</option>
+                    <option value="http">🌐 HTTP (Ports 80, 443)</option>
+                    <option value="telnet">📟 Telnet (Port 23)</option>
+                    <option value="multi">🎯 Multi-Port (All trap ports)</option>
+                  </select>
+                </label>
+
+                <label className="fleet__modal-field">
+                  <span>Instance Type</span>
+                  <select
+                    value={deployConfig.instance_type}
+                    onChange={(e) => setDeployConfig(c => ({ ...c, instance_type: e.target.value }))}
+                    disabled={deploying}
+                  >
+                    <option value="t2.micro">t2.micro — Free tier eligible</option>
+                    <option value="t3.micro">t3.micro — $0.0104/hr</option>
+                    <option value="t3a.micro">t3a.micro — $0.0094/hr</option>
+                    <option value="t3.small">t3.small — $0.0208/hr</option>
+                    <option value="t3a.small">t3a.small — $0.0188/hr</option>
+                  </select>
+                </label>
+
+                <div className="fleet__modal-info">
+                  <p>⚡ Launches with Suricata IDS + CloudWatch Agent pre-installed.</p>
+                  <p>🛡️ Uses existing honeypot security group &amp; IAM profile.</p>
+                  <p>📊 Max 5 honeypots allowed (enforced server-side).</p>
+                </div>
+
+                <div className="fleet__modal-actions">
+                  <button
+                    type="button"
+                    className="fleet__btn-refresh"
+                    onClick={() => setShowDeployModal(false)}
+                    disabled={deploying}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="fleet__btn-deploy"
+                    onClick={handleDeploy}
+                    disabled={deploying}
+                  >
+                    {deploying ? '⏳ Deploying…' : '🚀 Deploy'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   )
 }
