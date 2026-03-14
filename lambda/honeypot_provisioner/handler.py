@@ -4,6 +4,17 @@ PhantomWall Honeypot Provisioner Lambda
 POST /fleet/deploy   → launch a new honeypot EC2 instance
 POST /fleet/destroy  → terminate a honeypot EC2 instance
 
+Supported OS types:
+    ubuntu          – Ubuntu 22.04 LTS (default)
+    amazon-linux    – Amazon Linux 2023
+
+Architecture:
+    Each OS has its own isolated module (ubuntu.py, amazonlinux.py).
+    A bug in one OS module cannot crash deploys for other OS types.
+    This file is the shared router: validation, guardrails, tagging,
+    deploy/destroy logic.  OS-specific AMI lookup and bootstrap
+    scripts live in their own files.
+
 Environment variables:
     PROJECT_TAG         – Tag:Project value (default: phantomwall)
     ENVIRONMENT         – dev / staging / prod (default: dev)
@@ -47,6 +58,17 @@ SG_MAP = {
 # Allowed instance types (cost guardrail)
 ALLOWED_TYPES = {"t3.micro", "t3.small", "t3a.micro", "t3a.small", "t2.micro"}
 
+# ── OS Module Registry ──────────────────────────────────────────
+# Each OS module is imported lazily inside _get_os_module() so that
+# a syntax / import error in one module does NOT prevent the Lambda
+# from loading or other OS types from working.
+ALLOWED_OS_TYPES = {"ubuntu", "amazon-linux"}
+
+OS_LABELS = {
+    "ubuntu":       "ubuntu",
+    "amazon-linux": "al2023",
+}
+
 # Trap profiles define which ports the honeypot exposes
 TRAP_PROFILES = {
     "ssh":     {"name": "SSH Honeypot",     "ports": "22"},
@@ -86,94 +108,22 @@ def _count_active_honeypots() -> int:
     return count
 
 
-def _get_latest_ami() -> str:
-    """Get latest Ubuntu 22.04 LTS AMI."""
-    response = _ec2.describe_images(
-        Owners=["099720109477"],  # Canonical
-        Filters=[
-            {"Name": "name", "Values": ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]},
-            {"Name": "state", "Values": ["available"]},
-            {"Name": "virtualization-type", "Values": ["hvm"]},
-        ],
-    )
-    images = sorted(response["Images"], key=lambda x: x["CreationDate"], reverse=True)
-    if not images:
-        raise RuntimeError("No Ubuntu 22.04 AMI found")
-    return images[0]["ImageId"]
+def _get_os_module(os_type: str):
+    """Lazily import the correct OS module.
 
+    Each OS module exposes two functions:
+        get_latest_ami() -> str
+        build_user_data(trap_profile: str) -> str
 
-def _build_user_data(trap_profile: str) -> str:
-    """Build the user data bootstrap script.
-
-    Uses the same simplified inline script pattern as the Terraform-managed
-    honeypot so every instance gets Suricata + CloudWatch Agent installed.
+    Importing inside this function means a broken OS module
+    only raises an error for *that* OS — other OS types keep working.
     """
-    return f"""#!/bin/bash
-set -euo pipefail
-exec > >(tee /var/log/honeypot-bootstrap.log) 2>&1
-
-echo "=== PhantomWall Honeypot Bootstrap ==="
-echo "Trap Profile: {trap_profile}"
-echo "Timestamp: $(date -u)"
-
-# Update system
-apt-get update -y && apt-get upgrade -y
-
-# Install Suricata
-add-apt-repository -y ppa:oisf/suricata-stable
-apt-get update -y
-apt-get install -y suricata jq curl unzip
-
-# Configure Suricata for eve.json output
-cat > /etc/suricata/suricata-override.yaml << 'SURICONF'
-outputs:
-  - eve-log:
-      enabled: yes
-      filetype: regular
-      filename: /var/log/suricata/eve.json
-      types:
-        - alert
-        - http
-        - dns
-        - tls
-        - ssh
-        - flow
-SURICONF
-
-# Enable and start Suricata
-systemctl enable suricata
-systemctl restart suricata
-
-# Install CloudWatch Agent
-wget -q https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
-dpkg -i amazon-cloudwatch-agent.deb
-
-# Configure CloudWatch Agent to ship eve.json
-cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'CWCONF'
-{{
-  "logs": {{
-    "logs_collected": {{
-      "files": {{
-        "collect_list": [
-          {{
-            "file_path": "/var/log/suricata/eve.json",
-            "log_group_name": "/honeypot/suricata",
-            "log_stream_name": "{{instance_id}}/eve",
-            "timezone": "UTC"
-          }}
-        ]
-      }}
-    }}
-  }}
-}}
-CWCONF
-
-/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
-  -a fetch-config -m ec2 \
-  -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
-
-echo "=== Bootstrap Complete ==="
-"""
+    if os_type == "amazon-linux":
+        import amazonlinux as mod
+        return mod
+    # Default: ubuntu
+    import ubuntu as mod
+    return mod
 
 
 # ── Deploy Handler ──────────────────────────────────────────────
@@ -184,8 +134,14 @@ def _deploy(body: dict) -> dict:
     instance_type = body.get("instance_type", "t3a.small")
     trap_profile = body.get("trap_profile", "default").lower()
     honeypot_name = body.get("name", "").strip()
+    os_type = body.get("os_type", "ubuntu").lower()
 
     # ── Validation ──────────────────────────────────────────────
+    if os_type not in ALLOWED_OS_TYPES:
+        return _response(400, {
+            "error": f"Unsupported OS type '{os_type}'. Supported: {sorted(ALLOWED_OS_TYPES)}"
+        })
+
     if instance_type not in ALLOWED_TYPES:
         return _response(400, {
             "error": f"Instance type '{instance_type}' not allowed. Allowed: {sorted(ALLOWED_TYPES)}"
@@ -205,13 +161,22 @@ def _deploy(body: dict) -> dict:
             "max_allowed": MAX_INSTANCES,
         })
 
+    # ── Load OS module (isolated import) ────────────────────────
+    try:
+        os_mod = _get_os_module(os_type)
+    except Exception as e:
+        return _response(500, {
+            "error": f"OS module '{os_type}' failed to load: {e}. Other OS types are unaffected."
+        })
+
     # ── Resolve config ──────────────────────────────────────────
-    ami_id = _get_latest_ami()
+    ami_id = os_mod.get_latest_ami()
     profile_info = TRAP_PROFILES[trap_profile]
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    os_label = OS_LABELS.get(os_type, os_type)
 
     if not honeypot_name:
-        honeypot_name = f"{PROJECT_TAG}-honeypot-{trap_profile}-{timestamp}"
+        honeypot_name = f"{PROJECT_TAG}-honeypot-{os_label}-{trap_profile}-{timestamp}"
 
     # ── Launch instance ─────────────────────────────────────────
     run_params = {
@@ -219,7 +184,7 @@ def _deploy(body: dict) -> dict:
         "InstanceType": instance_type,
         "MinCount": 1,
         "MaxCount": 1,
-        "UserData": _build_user_data(trap_profile),
+        "UserData": os_mod.build_user_data(trap_profile),
         "TagSpecifications": [
             {
                 "ResourceType": "instance",
@@ -228,6 +193,7 @@ def _deploy(body: dict) -> dict:
                     {"Key": "Project", "Value": PROJECT_TAG},
                     {"Key": "Env", "Value": ENVIRONMENT},
                     {"Key": "ManagedBy", "Value": "phantomwall-provisioner"},
+                    {"Key": "OS", "Value": os_type},
                     {"Key": "TrapType", "Value": trap_profile},
                     {"Key": "TrapPorts", "Value": profile_info["ports"]},
                     {"Key": "LaunchedAt", "Value": timestamp},
@@ -254,6 +220,7 @@ def _deploy(body: dict) -> dict:
         "instance_id": instance["InstanceId"],
         "name": honeypot_name,
         "instance_type": instance_type,
+        "os_type": os_type,
         "trap_profile": trap_profile,
         "trap_ports": profile_info["ports"],
         "security_group": sg_id,

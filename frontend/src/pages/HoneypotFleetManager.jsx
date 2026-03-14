@@ -350,6 +350,7 @@ export default function HoneypotFleetManager() {
     name: '',
     instance_type: 't3a.small',
     trap_profile: 'default',
+    os_type: 'ubuntu',
   })
   const [deploying, setDeploying] = useState(false)
   const [deployResult, setDeployResult] = useState(null)
@@ -549,7 +550,7 @@ export default function HoneypotFleetManager() {
   /* ── Deploy a new honeypot ──────────────────────────────────── */
   const handleDeploy = async () => {
     if (!API_URL) {
-      setMessage(`Dry-run: Would deploy "${deployConfig.name || 'auto-named'}" (${deployConfig.trap_profile}) on ${deployConfig.instance_type}.`)
+      setMessage(`Dry-run: Would deploy "${deployConfig.name || 'auto-named'}" (${deployConfig.os_type} / ${deployConfig.trap_profile}) on ${deployConfig.instance_type}.`)
       setShowDeployModal(false)
       return
     }
@@ -572,7 +573,7 @@ export default function HoneypotFleetManager() {
       }
 
       setDeployResult(payload)
-      setMessage(`✅ Honeypot "${payload.name}" deployed — ${payload.instance_id} (${payload.current_count}/${payload.max_allowed} slots used)`)
+      setMessage(`✅ Honeypot "${payload.name}" deployed — ${payload.instance_id} [${payload.os_type || 'ubuntu'}] (${payload.current_count}/${payload.max_allowed} slots used)`)
       // Refresh fleet list after short delay for instance to register
       setTimeout(() => refreshFleet(), 3000)
     } catch (err) {
@@ -1062,6 +1063,10 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                       <span>{deployResult.instance_type}</span>
                     </div>
                     <div className="fleet__deploy-result-row">
+                      <span>OS</span>
+                      <span>{deployResult.os_type === 'amazon-linux' ? '🟠 Amazon Linux 2023' : '🟣 Ubuntu 22.04'}</span>
+                    </div>
+                    <div className="fleet__deploy-result-row">
                       <span>Trap Profile</span>
                       <span>{deployResult.trap_profile}</span>
                     </div>
@@ -1091,6 +1096,18 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                     onChange={(e) => setDeployConfig(c => ({ ...c, name: e.target.value }))}
                     disabled={deploying}
                   />
+                </label>
+
+                <label className="fleet__modal-field">
+                  <span>Operating System</span>
+                  <select
+                    value={deployConfig.os_type}
+                    onChange={(e) => setDeployConfig(c => ({ ...c, os_type: e.target.value }))}
+                    disabled={deploying}
+                  >
+                    <option value="ubuntu">🟣 Ubuntu 22.04 LTS</option>
+                    <option value="amazon-linux">🟠 Amazon Linux 2023</option>
+                  </select>
                 </label>
 
                 <label className="fleet__modal-field">
@@ -1125,7 +1142,8 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
 
                 <div className="fleet__modal-info">
                   <p>⚡ Launches with Suricata IDS + CloudWatch Agent pre-installed.</p>
-                  <p>🛡️ Uses existing honeypot security group &amp; IAM profile.</p>
+                  <p>🖥️ Supports Ubuntu 22.04 LTS &amp; Amazon Linux 2023.</p>
+                  <p>🛡️ Uses profile-specific security group &amp; IAM profile.</p>
                   <p>📊 Max 5 honeypots allowed (enforced server-side).</p>
                 </div>
 
