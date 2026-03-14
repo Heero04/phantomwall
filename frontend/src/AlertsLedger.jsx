@@ -56,6 +56,8 @@ const AlertsLedger = () => {
         dest_ip: item.dest_ip || 'Unknown',
         dest_port: item.dest_port || '',
         proto: item.proto || 'N/A',
+        honeypot_name: item.honeypot_name || item.honeypot_id || '—',
+        honeypot_os: item.honeypot_os || '',
       }));
 
       setAlerts(transformedAlerts);
@@ -608,6 +610,7 @@ const AlertsLedger = () => {
                         {columnVisibility.category && <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Category</th>}
                         {columnVisibility.origin && <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Origin</th>}
                         <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Source IP</th>
+                        <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Honeypot</th>
                         {columnVisibility.destination && <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Destination</th>}
                         {columnVisibility.protocol && <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Protocol</th>}
                         {columnVisibility.action && <th style={{ textAlign: 'left', padding: '0 0.85rem', position: 'sticky', top: 0, zIndex: 6, background: 'rgba(15, 23, 42, 0.97)', backdropFilter: 'blur(8px)' }}>Action</th>}
@@ -738,6 +741,28 @@ const AlertsLedger = () => {
                                   </>
                                 )}
                                 {isCopied && <span style={{ color: '#67e8f9', fontSize: '0.72rem' }}>Copied</span>}
+                              </div>
+                            </td>
+
+                            <td style={cellStyle}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                <span style={{
+                                  color: '#c4b5fd',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600
+                                }}>
+                                  {alert.honeypot_name}
+                                </span>
+                                {alert.honeypot_os && alert.honeypot_os !== '' && alert.honeypot_os !== '—' && (
+                                  <span style={{
+                                    color: '#94a3b8',
+                                    fontSize: '0.68rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em'
+                                  }}>
+                                    {alert.honeypot_os}
+                                  </span>
+                                )}
                               </div>
                             </td>
 

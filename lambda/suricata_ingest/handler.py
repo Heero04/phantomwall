@@ -17,8 +17,14 @@ _s3 = boto3.client("s3")
 _s3_bucket = os.environ.get("S3_BUCKET_NAME")
 _s3_enabled = os.environ.get("ENABLE_S3_BACKUP", "false").lower() == "true"
 
+# EC2 client for honeypot tag enrichment
+_ec2 = boto3.client("ec2")
+
 # GeoIP cache (persists across invocations in same Lambda container)
 _geo_cache = {}
+
+# Honeypot metadata cache (persists across warm invocations)
+_honeypot_cache = {}
 
 
 def _is_private_ip(ip):
@@ -94,9 +100,54 @@ def _enrich_geo(ip):
 def _decode_logs(event):
     data = event.get("awslogs", {}).get("data")
     if not data:
-        return []
+        return [], "", ""
     payload = gzip.decompress(base64.b64decode(data)).decode("utf-8")
-    return json.loads(payload).get("logEvents", [])
+    parsed = json.loads(payload)
+    log_stream = parsed.get("logStream", "")
+    log_group = parsed.get("logGroup", "")
+    return parsed.get("logEvents", []), log_stream, log_group
+
+
+def _extract_instance_id(log_stream: str) -> str:
+    """Extract EC2 instance ID from CloudWatch log stream name.
+
+    CW Agent config sets: log_stream_name = "{instance_id}/eve"
+    So "i-0abc123def456/eve" → "i-0abc123def456"
+    """
+    if "/" in log_stream:
+        candidate = log_stream.split("/")[0]
+        if candidate.startswith("i-"):
+            return candidate
+    return log_stream or "unknown"
+
+
+def _get_honeypot_meta(instance_id: str) -> dict:
+    """Look up EC2 tags for a honeypot instance. Returns cached result when possible."""
+    if instance_id in _honeypot_cache:
+        return _honeypot_cache[instance_id]
+
+    meta = {
+        "honeypot_id": instance_id,
+        "honeypot_name": instance_id,
+        "honeypot_os": "unknown",
+    }
+
+    if not instance_id.startswith("i-"):
+        _honeypot_cache[instance_id] = meta
+        return meta
+
+    try:
+        resp = _ec2.describe_instances(InstanceIds=[instance_id])
+        for res in resp.get("Reservations", []):
+            for inst in res.get("Instances", []):
+                tags = {t["Key"]: t["Value"] for t in inst.get("Tags", [])}
+                meta["honeypot_name"] = tags.get("Name", instance_id)
+                meta["honeypot_os"] = tags.get("OS", "unknown")
+    except Exception as e:
+        print(f"EC2 describe failed for {instance_id}: {e}")
+
+    _honeypot_cache[instance_id] = meta
+    return meta
 
 
 def _normalize_timestamp(ts_str, fallback_ms):
@@ -256,9 +307,13 @@ def _write_to_s3(suricata_event, event_dt):
 
 
 def handler(event, context):
-    log_events = _decode_logs(event)
+    log_events, log_stream, log_group = _decode_logs(event)
     if not log_events:
         return {"statusCode": 200, "records": 0}
+
+    # Extract honeypot identity from CloudWatch log stream + EC2 tags
+    instance_id = _extract_instance_id(log_stream)
+    honeypot_meta = _get_honeypot_meta(instance_id)
 
     now_ms = int(datetime.datetime.utcnow().timestamp() * 1000)
     items = []
@@ -309,6 +364,9 @@ def handler(event, context):
                 "event_date": event_date,
                 "event_id": event_id,
                 "ingest_time": now_ms,
+                "honeypot_id": honeypot_meta.get("honeypot_id", "unknown"),
+                "honeypot_name": honeypot_meta.get("honeypot_name", "unknown"),
+                "honeypot_os": honeypot_meta.get("honeypot_os", "unknown"),
                 "suricata": suricata_event,
             }
 

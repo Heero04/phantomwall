@@ -144,6 +144,13 @@ resource "aws_iam_role_policy" "alert_indexer_policy" {
           "dynamodb:GetItem"
         ]
         Resource = aws_dynamodb_table.phantomwall_alerts[0].arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances"
+        ]
+        Resource = "*"
       }
     ]
   })

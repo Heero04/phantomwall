@@ -94,6 +94,11 @@ resource "aws_iam_role_policy" "lambda_ingest" {
           "logs:PutLogEvents"
         ],
         Resource = "*"
+      },
+      {
+        Effect   = "Allow",
+        Action   = ["ec2:DescribeInstances"],
+        Resource = "*"
       }
     ]
   })

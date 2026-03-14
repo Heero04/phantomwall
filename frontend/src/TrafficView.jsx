@@ -33,6 +33,8 @@ const normalizeRestEvent = (raw) => ({
   signature: raw.signature || '',
   country:   raw.country_name || '',
   flag:      raw.flag || '',
+  honeypot_name: raw.honeypot_name || raw.honeypot_id || '—',
+  honeypot_os:   raw.honeypot_os || '',
   payload: [
     raw.signature    && ('Signature: ' + raw.signature),
     raw.category     && ('Category: ' + raw.category),
@@ -242,7 +244,7 @@ export default function TrafficView() {
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.55rem', minWidth: '860px' }}>
                 <thead>
                   <tr style={{ color: '#94a3b8', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {['Source IP', 'Port', 'Protocol', 'Action', 'Origin', 'Timestamp', 'Actions'].map((h) => (
+                    {['Source IP', 'Port', 'Protocol', 'Action', 'Honeypot', 'Origin', 'Timestamp', 'Actions'].map((h) => (
                       <th key={h} style={{ textAlign: 'left', padding: '0 0.75rem', position: 'sticky', top: 0, zIndex: 5, background: 'rgba(15, 23, 42, 0.97)' }}>{h}</th>
                     ))}
                   </tr>
@@ -264,6 +266,7 @@ export default function TrafficView() {
                           <td style={cell}><span style={{ color: '#fff', fontVariantNumeric: 'tabular-nums' }}>{e.port}</span></td>
                           <td style={cell}><span style={{ color: '#cbd5e1' }}>{e.protocol}</span></td>
                           <td style={cell}><span style={{ color: e.action === 'BLOCKED' ? '#fca5a5' : '#86efac', border: e.action === 'BLOCKED' ? '1px solid rgba(248,113,113,0.4)' : '1px solid rgba(74,222,128,0.4)', background: e.action === 'BLOCKED' ? 'rgba(248,113,113,0.14)' : 'rgba(74,222,128,0.14)', borderRadius: '999px', padding: '0.2rem 0.45rem', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em' }}>{e.action}</span></td>
+                          <td style={cell}><span style={{ color: '#c4b5fd', fontSize: '0.8rem', fontWeight: 600 }}>{e.honeypot_name}</span>{e.honeypot_os && e.honeypot_os !== '—' && <span style={{ color: '#94a3b8', fontSize: '0.65rem', marginLeft: '0.3rem', textTransform: 'uppercase' }}>{e.honeypot_os}</span>}</td>
                           <td style={cell}><span style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>{e.flag && <span style={{ marginRight: '0.3rem' }}>{e.flag}</span>}{e.country || '\u2014'}</span></td>
                           <td style={cell}><span style={{ color: '#cbd5e1', fontFamily: '"JetBrains Mono","Consolas",monospace', fontSize: '0.8rem', fontVariantNumeric: 'tabular-nums' }}>{relativeTime(e.timestamp)}</span></td>
                           <td style={{ ...cell, borderRight: '1px solid rgba(100,116,139,0.3)', borderRadius: '0 10px 10px 0', textAlign: 'right' }}>
@@ -274,7 +277,7 @@ export default function TrafficView() {
                           </td>
                         </tr>
                         {isExp && (
-                          <tr><td colSpan={7} style={{ padding: '0.25rem 0.75rem 0.6rem' }}><div style={{ background: '#071019', border: '1px solid rgba(148,163,184,0.3)', borderRadius: '0.5rem', padding: '0.65rem', color: '#e2e8f0', fontFamily: '"JetBrains Mono","Consolas",monospace', fontSize: '0.74rem', whiteSpace: 'pre-wrap', overflow: 'auto', maxHeight: '160px' }}>{e.payload}</div></td></tr>
+                          <tr><td colSpan={8} style={{ padding: '0.25rem 0.75rem 0.6rem' }}><div style={{ background: '#071019', border: '1px solid rgba(148,163,184,0.3)', borderRadius: '0.5rem', padding: '0.65rem', color: '#e2e8f0', fontFamily: '"JetBrains Mono","Consolas",monospace', fontSize: '0.74rem', whiteSpace: 'pre-wrap', overflow: 'auto', maxHeight: '160px' }}>{e.payload}</div></td></tr>
                         )}
                       </React.Fragment>
                     );
