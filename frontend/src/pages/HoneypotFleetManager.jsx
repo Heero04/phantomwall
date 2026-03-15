@@ -11,7 +11,7 @@ const FALLBACK_FLEET = [
     instance_id: 'i-00c7a2a4fec3c9835',
     name: 'honeypot-ssh-east',
     trap_type: 'SSH',
-    instance_type: 't3.micro',
+    instance_type: 't3.small',
     az: 'us-east-1a',
     status: 'running',
     region: 'us-east-1',
@@ -41,7 +41,7 @@ const FALLBACK_FLEET = [
     instance_id: 'i-0f4fcbec341ab2499',
     name: 'honeypot-telnet-lab',
     trap_type: 'Telnet',
-    instance_type: 't3.micro',
+    instance_type: 't3a.small',
     az: 'us-east-1a',
     status: 'running',
     region: 'us-east-1',
@@ -56,7 +56,7 @@ const FALLBACK_FLEET = [
     instance_id: 'i-0a83d91fc2e74b102',
     name: 'honeypot-ssh-bravo',
     trap_type: 'SSH',
-    instance_type: 't3.micro',
+    instance_type: 't3.small',
     az: 'us-east-1c',
     status: 'running',
     region: 'us-east-1',
@@ -86,7 +86,7 @@ const FALLBACK_FLEET = [
     instance_id: 'i-0de0f37851a4c6e01',
     name: 'honeypot-dns-trap',
     trap_type: 'DNS',
-    instance_type: 't3.nano',
+    instance_type: 't3a.small',
     az: 'us-east-1c',
     status: 'pending',
     region: 'us-east-1',
@@ -1017,7 +1017,7 @@ Response schema:
   "instance_id": "i-abc123",
   "name": "honeypot-ssh-east",
   "trap_type": "ssh",
-  "instance_type": "t3.micro",
+  "instance_type": "t3a.small",
   "az": "us-east-1a",
   "status": "running",
   "health_checks": { "system": "ok", "instance": "ok" },
@@ -1132,11 +1132,10 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                     onChange={(e) => setDeployConfig(c => ({ ...c, instance_type: e.target.value }))}
                     disabled={deploying}
                   >
-                    <option value="t2.micro">t2.micro — Free tier eligible</option>
-                    <option value="t3.micro">t3.micro — $0.0104/hr</option>
-                    <option value="t3a.micro">t3a.micro — $0.0094/hr</option>
+                    <option value="t3a.small">t3a.small — $0.0188/hr (recommended)</option>
                     <option value="t3.small">t3.small — $0.0208/hr</option>
-                    <option value="t3a.small">t3a.small — $0.0188/hr</option>
+                    <option value="t3a.medium">t3a.medium — $0.0376/hr</option>
+                    <option value="t3.medium">t3.medium — $0.0416/hr</option>
                   </select>
                 </label>
 

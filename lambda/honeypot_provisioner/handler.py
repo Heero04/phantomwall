@@ -56,7 +56,8 @@ SG_MAP = {
 }
 
 # Allowed instance types (cost guardrail)
-ALLOWED_TYPES = {"t3.micro", "t3.small", "t3a.micro", "t3a.small", "t2.micro"}
+# Minimum 2 GB RAM required — Suricata + 48 K rules OOMs on 1 GB (t2.micro, t3.micro, t3a.micro)
+ALLOWED_TYPES = {"t3.small", "t3a.small", "t3.medium", "t3a.medium"}
 
 # ── OS Module Registry ──────────────────────────────────────────
 # Each OS module is imported lazily inside _get_os_module() so that
