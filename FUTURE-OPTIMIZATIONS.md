@@ -10,6 +10,38 @@ Most core features are operational. Focus shifting toward CI/CD, multi-tenancy, 
 
 ---
 
+## 🎯 **PRIORITY LIST — What To Focus On Next**
+
+> These are the immediate action items. Each links to the detailed section below.
+
+### 🔴 High Priority (Do Now)
+- [ ] **CI/CD Pipeline** — GitHub Actions for Terraform validation, frontend build, dependency scanning *(Phase 2 below)*
+- [ ] **Deploy to Production** — Move from dev to prod environment
+- [ ] **CloudFront + CDN** — Cache API responses at edge, free DDoS protection
+
+### 🟡 Medium Priority (Next Sprint)
+- [ ] **API Rate Limiting** — Protect public endpoints from abuse
+- [ ] **AWS Organizations Multi-Tenant** — Per-customer AWS accounts *(Phase 4 below)*
+- [ ] **GuardDuty + Security Hub** — AWS-native threat detection
+
+### 🟢 Low Priority (Backlog)
+- [ ] **Advanced ML Threat Detection** — Beyond Suricata rule matching
+- [ ] **SOC2/ISO 27001 Compliance** — Security certifications
+
+---
+
+## 📝 **Next Up — Working Tasks**
+
+> Smaller tasks and improvements to knock out as time allows.
+
+- [ ] **Update Architecture Diagram** — Current diagram is outdated, missing per-instance log groups, fleet deployer, data flow checks, WAF auto-block, alert-indexer pipeline, Bedrock chat. Create v4 diagram reflecting actual deployed architecture.
+- [ ] **Add Honeypot Field to CSV Export** — Alert Ledger CSV export is missing the honeypot name/instance column. Users need to know which honeypot each alert came from.
+- [ ] **Add Honeypot Field to S3 Log Archive** — S3 log records (written by suricata_ingest Lambda) should include the honeypot instance_id/name so archived logs are filterable per-honeypot.
+- [ ] **Build AWS WAF Dashboard Page** — Dedicated frontend page showing WAF rules, blocked IPs, auto-block status, IP blocklist management, toggle rules on/off. *(waf_api Lambda already exists)*
+- [ ] **Update Cloud Cost Poster Page** — Cost page should dynamically reflect actual AWS spend — add/remove line items as resources change. Show real Budget API data instead of static numbers.
+
+---
+
 ## 📋 **Phase 1: Core Features**
 
 - [x] Complete honeypot deployment and testing ✅ *(Fleet deployer with Ubuntu + AL2023 support)*
@@ -463,4 +495,4 @@ function CustomerDashboard({ customerId }) {
 ---
 
 **Last Updated:** 2026-03-22
-**Status:** Phase 1 largely complete — shifting to CI/CD and multi-tenancy planning
+**Status:** Phase 1 largely complete — focusing on priority list items above
