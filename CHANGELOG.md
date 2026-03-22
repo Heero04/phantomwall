@@ -1,5 +1,27 @@
 # Changelog
 
+## [v0.8] - 2026-03-22
+
+### Per-instance data flow health checks
+
+- **Fleet Manager Lambda** (`fleet_manager/handler.py`): Added `_check_data_flow()` function that checks per-instance pipeline health — log group exists, log streams have recent data (with human-readable age), subscription filter count, events pipeline wired (ingest Lambda), alerts pipeline wired (alert-indexer Lambda)
+- **IAM permissions** (`fleet_lambda.tf`): Added `logs:DescribeLogGroups` (on `*`), scoped `logs:DescribeLogStreams` + `logs:DescribeSubscriptionFilters` (on `/honeypot/suricata/*`), `dynamodb:Query` on events + alerts tables
+- **Lambda env vars**: Added `CW_LOG_GROUP_PREFIX`, `EVENTS_TABLE`, `ALERTS_TABLE` to fleet_manager Lambda; bumped timeout 30→60s for additional API calls
+- **Frontend**: Added `DataFlowItem` component and `📡 Data Flow` section to each instance card in Fleet Manager showing ✅/❌ checkmarks for: Log Group, Log Stream (with age), Filters (count/2), Events → DynamoDB, Alerts → DynamoDB
+- **CSS**: Added `.fleet__data-flow` styles with green/red pill indicators, glassmorphism background
+- **Verified end-to-end**: test3 (`i-0a46ace5c37a8f1e9`) — all 5 checks green, log stream age updating in real-time, 2/2 subscription filters confirmed
+
+## [v0.7] - 2026-03-22
+
+### Per-instance CloudWatch log groups + Suricata bootstrap fix
+
+- **Per-instance log groups**: Each fleet-deployed honeypot now gets its own CloudWatch log group (`/honeypot/suricata/{instance_id}`) with 2 subscription filters (suricata_ingest → DynamoDB + S3, alert-indexer → alerts table)
+- **Honeypot provisioner** (`honeypot_provisioner/handler.py`): Creates per-instance log group on deploy, cleans up on destroy with `_setup_instance_log_group()` and `_cleanup_instance_log_group()`
+- **Bootstrap fixes** (`ubuntu.py`, `amazonlinux.py`): Auto-detect primary network interface via `ip route get 8.8.8.8` (fixes `eth0` vs `ens5` crash), patches `suricata.yaml` af-packet section with `sed`, runs `suricata-update` with ET Open rules + fallback honeypot rules, resilient error handling (no `set -euo pipefail` for non-critical steps)
+- **Wildcard Lambda permissions** (`logging_lambda.tf`, `alerts-dynamodb.tf`): Updated to allow subscription filters from any `/honeypot/suricata/*` log group
+- **Verified end-to-end**: Suricata active on `ens5`, 49k+ rules loaded, CW Agent streaming to per-instance log group, events in DynamoDB, alerts in DynamoDB, data in S3
+- **$0.00 additional cost**: Log groups are free, CW Agent already running
+
 ## [v0.6] - 2026-01-25
 
 ### Cost optimization
