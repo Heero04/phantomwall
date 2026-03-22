@@ -202,6 +202,16 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   source_arn    = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${var.cw_log_group}:*"
 }
 
+# Allow per-instance honeypot log groups (/honeypot/suricata/*) to invoke alert-indexer
+resource "aws_lambda_permission" "allow_cloudwatch_per_instance" {
+  count         = local.alerts_enabled ? 1 : 0
+  statement_id  = "AllowExecutionFromCloudWatchLogsPerInstance"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.alert_indexer[0].function_name
+  principal     = "logs.amazonaws.com"
+  source_arn    = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/*"
+}
+
 # Subscription filter to send only alerts to Lambda
 resource "aws_cloudwatch_log_subscription_filter" "suricata_alerts" {
   count           = local.alerts_enabled ? 1 : 0

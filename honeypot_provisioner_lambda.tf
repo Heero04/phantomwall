@@ -48,15 +48,30 @@ resource "aws_iam_role_policy" "lambda_provisioner" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # CloudWatch Logs
+      # CloudWatch Logs — basic Lambda logging
       {
         Effect = "Allow",
         Action = [
-          "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ],
         Resource = "*"
+      },
+      # CloudWatch Logs — per-instance honeypot log group lifecycle
+      # Provisioner creates/deletes a log group per honeypot instance
+      # and attaches subscription filters for the ingest pipeline
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:DeleteLogGroup",
+          "logs:PutRetentionPolicy",
+          "logs:PutSubscriptionFilter",
+          "logs:DeleteSubscriptionFilter",
+          "logs:DescribeSubscriptionFilters",
+          "logs:TagLogGroup"
+        ],
+        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/*"
       },
       # EC2 — describe (needed for AMI lookup & instance counting)
       {
@@ -163,6 +178,11 @@ resource "aws_lambda_function" "honeypot_provisioner" {
       SUBNET_ID         = var.subnet_tag_value != "" && length(data.aws_subnets.by_tag.ids) > 0 ? data.aws_subnets.by_tag.ids[0] : var.public_subnet_id
       SCRIPTS_BUCKET    = aws_s3_bucket.honeypot_scripts.id
       MAX_INSTANCES     = "5"
+      # Per-instance log group pipeline
+      CW_LOG_GROUP_PREFIX    = "/honeypot/suricata"
+      CW_LOG_RETENTION_DAYS  = "7"
+      INGEST_LAMBDA_ARN      = aws_lambda_function.suricata_ingest.arn
+      ALERT_INDEXER_LAMBDA_ARN = local.alerts_enabled ? aws_lambda_function.alert_indexer[0].arn : ""
     }
   }
 

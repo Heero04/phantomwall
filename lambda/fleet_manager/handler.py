@@ -241,10 +241,12 @@ def _list_fleet(params: dict) -> dict:
     for inst in instances_raw:
         iid = inst["InstanceId"]
         name = ""
+        os_type = ""
         for tag in inst.get("Tags", []):
             if tag["Key"] == "Name":
                 name = tag["Value"]
-                break
+            elif tag["Key"] == "OS":
+                os_type = tag["Value"]
 
         trap_type = _infer_trap_type(inst)
 
@@ -268,6 +270,7 @@ def _list_fleet(params: dict) -> dict:
                 "name": name or iid,
                 "trap_type": trap_type,
                 "instance_type": inst.get("InstanceType", ""),
+                "os_type": os_type or "unknown",
                 "az": az,
                 "status": status,
                 "region": region,

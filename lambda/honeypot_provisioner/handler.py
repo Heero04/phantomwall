@@ -15,19 +15,30 @@ Architecture:
     deploy/destroy logic.  OS-specific AMI lookup and bootstrap
     scripts live in their own files.
 
+Per-Instance Log Groups:
+    Each honeypot gets its own CloudWatch log group:
+        /honeypot/suricata/{instance_id}
+    On deploy: create log group + 2 subscription filters
+    On destroy: delete subscription filters + log group
+
 Environment variables:
-    PROJECT_TAG         – Tag:Project value (default: phantomwall)
-    ENVIRONMENT         – dev / staging / prod (default: dev)
-    SECURITY_GROUP_ID   – SG to attach to new instances
-    INSTANCE_PROFILE    – IAM instance profile name for honeypot role
-    SUBNET_ID           – Public subnet to launch into
-    SCRIPTS_BUCKET      – S3 bucket with honeypot bootstrap scripts
-    MAX_INSTANCES       – Hard cap on total honeypots (default: 5)
-    AWS_REGION          – inherited from Lambda runtime
+    PROJECT_TAG              – Tag:Project value (default: phantomwall)
+    ENVIRONMENT              – dev / staging / prod (default: dev)
+    SECURITY_GROUP_ID        – SG to attach to new instances
+    INSTANCE_PROFILE         – IAM instance profile name for honeypot role
+    SUBNET_ID                – Public subnet to launch into
+    SCRIPTS_BUCKET           – S3 bucket with honeypot bootstrap scripts
+    MAX_INSTANCES            – Hard cap on total honeypots (default: 5)
+    CW_LOG_GROUP_PREFIX      – Base path for per-instance log groups
+    CW_LOG_RETENTION_DAYS    – Retention in days for honeypot log groups
+    INGEST_LAMBDA_ARN        – ARN of suricata_ingest Lambda
+    ALERT_INDEXER_LAMBDA_ARN – ARN of alert-indexer Lambda (optional)
+    AWS_REGION               – inherited from Lambda runtime
 """
 
 import json
 import os
+import time
 import traceback
 from datetime import datetime, timezone
 
@@ -36,6 +47,7 @@ import boto3
 # ── Clients ─────────────────────────────────────────────────────
 _ec2 = boto3.client("ec2")
 _s3 = boto3.client("s3")
+_logs = boto3.client("logs")
 
 # ── Config ──────────────────────────────────────────────────────
 PROJECT_TAG = os.environ.get("PROJECT_TAG", "phantomwall")
@@ -45,6 +57,12 @@ INSTANCE_PROFILE = os.environ.get("INSTANCE_PROFILE", "")
 SUBNET_ID = os.environ.get("SUBNET_ID", "")
 SCRIPTS_BUCKET = os.environ.get("SCRIPTS_BUCKET", "")
 MAX_INSTANCES = int(os.environ.get("MAX_INSTANCES", "5"))
+
+# Per-instance log group pipeline config
+CW_LOG_GROUP_PREFIX = os.environ.get("CW_LOG_GROUP_PREFIX", "/honeypot/suricata")
+CW_LOG_RETENTION_DAYS = int(os.environ.get("CW_LOG_RETENTION_DAYS", "7"))
+INGEST_LAMBDA_ARN = os.environ.get("INGEST_LAMBDA_ARN", "")
+ALERT_INDEXER_LAMBDA_ARN = os.environ.get("ALERT_INDEXER_LAMBDA_ARN", "")
 
 # Per-profile security group IDs (set via Terraform env vars)
 SG_MAP = {
@@ -128,6 +146,122 @@ def _get_os_module(os_type: str):
 
 
 # ── Deploy Handler ──────────────────────────────────────────────
+
+def _log_group_for_instance(instance_id: str) -> str:
+    """Build the per-instance CloudWatch log group name."""
+    return f"{CW_LOG_GROUP_PREFIX}/{instance_id}"
+
+
+def _setup_instance_log_group(instance_id: str) -> dict:
+    """Create a per-instance CW log group and attach subscription filters.
+
+    Creates:
+        /honeypot/suricata/{instance_id}
+    Subscription filters:
+        1. ingest-all    → suricata_ingest Lambda  (all events)
+        2. alert-only    → alert-indexer Lambda     (event_type = "alert")
+
+    Returns a summary dict for the API response.
+    """
+    log_group_name = _log_group_for_instance(instance_id)
+    result = {"log_group": log_group_name, "filters_created": []}
+
+    try:
+        # Create log group
+        _logs.create_log_group(
+            logGroupName=log_group_name,
+            tags={
+                "Project": PROJECT_TAG,
+                "Env": ENVIRONMENT,
+                "ManagedBy": "phantomwall-provisioner",
+                "InstanceId": instance_id,
+            },
+        )
+        print(f"Created log group: {log_group_name}")
+
+        # Set retention
+        _logs.put_retention_policy(
+            logGroupName=log_group_name,
+            retentionInDays=CW_LOG_RETENTION_DAYS,
+        )
+
+    except _logs.exceptions.ResourceAlreadyExistsException:
+        print(f"Log group already exists: {log_group_name}")
+
+    # Small delay to ensure log group is ready for subscription filters
+    time.sleep(1)
+
+    # Filter 1: ALL events → suricata_ingest Lambda
+    if INGEST_LAMBDA_ARN:
+        try:
+            _logs.put_subscription_filter(
+                logGroupName=log_group_name,
+                filterName=f"{PROJECT_TAG}-ingest-all-{instance_id}",
+                filterPattern="",
+                destinationArn=INGEST_LAMBDA_ARN,
+            )
+            result["filters_created"].append("ingest-all")
+            print(f"Created ingest-all subscription filter for {log_group_name}")
+        except Exception as e:
+            print(f"WARNING: Failed to create ingest-all filter: {e}")
+
+    # Filter 2: ALERTS only → alert-indexer Lambda
+    if ALERT_INDEXER_LAMBDA_ARN:
+        try:
+            _logs.put_subscription_filter(
+                logGroupName=log_group_name,
+                filterName=f"{PROJECT_TAG}-alert-only-{instance_id}",
+                filterPattern='{ $.event_type = "alert" }',
+                destinationArn=ALERT_INDEXER_LAMBDA_ARN,
+            )
+            result["filters_created"].append("alert-only")
+            print(f"Created alert-only subscription filter for {log_group_name}")
+        except Exception as e:
+            print(f"WARNING: Failed to create alert-only filter: {e}")
+
+    return result
+
+
+def _cleanup_instance_log_group(instance_id: str) -> dict:
+    """Delete subscription filters and log group for a terminated honeypot.
+
+    Best-effort: does not raise on failure (instance may have been
+    terminated before its log group was created).
+    """
+    log_group_name = _log_group_for_instance(instance_id)
+    result = {"log_group": log_group_name, "filters_deleted": [], "log_group_deleted": False}
+
+    # Delete subscription filters first
+    filter_names = [
+        f"{PROJECT_TAG}-ingest-all-{instance_id}",
+        f"{PROJECT_TAG}-alert-only-{instance_id}",
+    ]
+    for filter_name in filter_names:
+        try:
+            _logs.delete_subscription_filter(
+                logGroupName=log_group_name,
+                filterName=filter_name,
+            )
+            result["filters_deleted"].append(filter_name)
+            print(f"Deleted subscription filter: {filter_name}")
+        except _logs.exceptions.ResourceNotFoundException:
+            print(f"Subscription filter not found (already deleted?): {filter_name}")
+        except Exception as e:
+            print(f"WARNING: Failed to delete filter {filter_name}: {e}")
+
+    # Delete the log group
+    try:
+        _logs.delete_log_group(logGroupName=log_group_name)
+        result["log_group_deleted"] = True
+        print(f"Deleted log group: {log_group_name}")
+    except _logs.exceptions.ResourceNotFoundException:
+        print(f"Log group not found (already deleted?): {log_group_name}")
+    except Exception as e:
+        print(f"WARNING: Failed to delete log group {log_group_name}: {e}")
+
+    return result
+
+
 def _deploy(body: dict) -> dict:
     """Launch a new honeypot EC2 instance."""
 
@@ -185,7 +319,7 @@ def _deploy(body: dict) -> dict:
         "InstanceType": instance_type,
         "MinCount": 1,
         "MaxCount": 1,
-        "UserData": os_mod.build_user_data(trap_profile),
+        "UserData": os_mod.build_user_data(trap_profile, CW_LOG_GROUP_PREFIX),
         "TagSpecifications": [
             {
                 "ResourceType": "instance",
@@ -215,10 +349,14 @@ def _deploy(body: dict) -> dict:
 
     result = _ec2.run_instances(**run_params)
     instance = result["Instances"][0]
+    instance_id = instance["InstanceId"]
+
+    # ── Create per-instance log group + subscription filters ────
+    log_group_result = _setup_instance_log_group(instance_id)
 
     return _response(201, {
         "message": "Honeypot deployed successfully",
-        "instance_id": instance["InstanceId"],
+        "instance_id": instance_id,
         "name": honeypot_name,
         "instance_type": instance_type,
         "os_type": os_type,
@@ -229,6 +367,8 @@ def _deploy(body: dict) -> dict:
         "state": instance["State"]["Name"],
         "current_count": current_count + 1,
         "max_allowed": MAX_INSTANCES,
+        "log_group": log_group_result["log_group"],
+        "log_filters": log_group_result["filters_created"],
     })
 
 
@@ -263,10 +403,15 @@ def _destroy(body: dict) -> dict:
     # Terminate
     _ec2.terminate_instances(InstanceIds=[instance_id])
 
+    # Clean up per-instance log group + subscription filters
+    log_cleanup = _cleanup_instance_log_group(instance_id)
+
     return _response(200, {
         "message": "Honeypot termination initiated",
         "instance_id": instance_id,
         "name": tags.get("Name", "unknown"),
+        "log_group_deleted": log_cleanup["log_group_deleted"],
+        "log_filters_deleted": log_cleanup["filters_deleted"],
     })
 
 

@@ -142,6 +142,15 @@ resource "aws_lambda_permission" "allow_logs" {
   source_arn    = "${aws_cloudwatch_log_group.suricata.arn}:*"
 }
 
+# Allow per-instance honeypot log groups (/honeypot/suricata/*) to invoke the ingest Lambda
+resource "aws_lambda_permission" "allow_logs_per_instance" {
+  statement_id  = "AllowCloudWatchLogsInvokePerInstance"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.suricata_ingest.function_name
+  principal     = "logs.${var.aws_region}.amazonaws.com"
+  source_arn    = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/*"
+}
+
 resource "aws_cloudwatch_log_subscription_filter" "suricata_to_lambda" {
   name            = "${var.project_name}-cloudwatch-lambda-subscription-${var.environment}"
   log_group_name  = aws_cloudwatch_log_group.suricata.name

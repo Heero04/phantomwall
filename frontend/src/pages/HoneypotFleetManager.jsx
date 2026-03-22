@@ -252,6 +252,10 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
           <span className="fleet__type-badge">{item.instance_type}</span>
         </div>
         <div className="fleet__card-meta-item">
+          <span className="fleet__card-meta-label">OS</span>
+          <span className="fleet__os-badge">{item.os_type === 'amazon-linux' ? '🟠 AL2023' : item.os_type === 'ubuntu' ? '🟣 Ubuntu' : item.os_type || '—'}</span>
+        </div>
+        <div className="fleet__card-meta-item">
           <span className="fleet__card-meta-label">AZ</span>
           <span className="fleet__az-badge">{item.az}</span>
         </div>
@@ -935,6 +939,7 @@ export default function HoneypotFleetManager() {
                       <div className="fleet__az-type">
                         <span className="fleet__az-badge">{item.az || '-'}</span>
                         <span className="fleet__type-badge">{item.instance_type || '-'}</span>
+                        <span className="fleet__os-badge">{item.os_type === 'amazon-linux' ? '🟠 AL2023' : item.os_type === 'ubuntu' ? '🟣 Ubuntu' : item.os_type || '—'}</span>
                       </div>
                     </td>
                     <td><span className={statusClass(item.status)}>{item.status || 'unknown'}</span></td>
