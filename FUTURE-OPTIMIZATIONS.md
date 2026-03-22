@@ -4,18 +4,21 @@ This document tracks improvements to implement after core features are complete.
 
 ---
 
-## 🔄 **Status: Deferred Until Project Completion**
+## 🔄 **Status: Phase 1 Core Features — Largely Complete ✅**
 
-Focus on completing core functionality first, then return to these optimizations.
+Most core features are operational. Focus shifting toward CI/CD, multi-tenancy, and polish.
 
 ---
 
-## 📋 **Phase 1: Core Features (Current Focus)**
+## 📋 **Phase 1: Core Features**
 
-- [ ] Complete honeypot deployment and testing
-- [ ] Finalize dashboard features and UI
-- [ ] Ensure API endpoints are stable
-- [ ] Test end-to-end data flow (EC2 → CloudWatch → Lambda → DynamoDB → API → Frontend)
+- [x] Complete honeypot deployment and testing ✅ *(Fleet deployer with Ubuntu + AL2023 support)*
+- [x] Finalize dashboard features and UI ✅ *(Quick Access Dashboard, Alert Ledger, Fleet Manager)*
+- [x] Ensure API endpoints are stable ✅ *(API Gateway + 8 Lambda functions)*
+- [x] Test end-to-end data flow (EC2 → CloudWatch → Lambda → DynamoDB → API → Frontend) ✅ *(Verified with test2 + test3, per-instance log groups, 29 alerts flowing)*
+- [x] Per-instance CloudWatch log groups ✅ *(v0.7 — /honeypot/suricata/{instance_id})*
+- [x] Per-instance data flow health checks on Fleet Manager ✅ *(v0.8 — log group, streams, subscription filters, pipeline checks)*
+- [x] Suricata bootstrap auto-detection (interface, rules, resilience) ✅ *(v0.7 — ens5 fix, suricata-update, fallback rules)*
 - [ ] Deploy to production environment
 - [ ] Gather initial user feedback
 
@@ -60,6 +63,8 @@ Focus on completing core functionality first, then return to these optimizations
 
 ### **1. Security Pillar**
 - [x] ✅ Secret scanning (Gitleaks) - DONE
+- [x] ✅ Implement AWS WAF integration - DONE *(WAF ACL + auto-block Lambda + IP blocklist)*
+- [x] ✅ Cognito user authentication - DONE *(User pools, identity pools, JWT)*
 - [ ] Static Application Security Testing (SAST)
 - [ ] Container scanning (if using Docker)
 - [ ] Automated security patching
@@ -67,35 +72,37 @@ Focus on completing core functionality first, then return to these optimizations
 - [ ] Implement AWS Security Hub integration
 
 ### **2. Cost Optimization Pillar**
+- [x] ✅ Review and optimize Lambda memory allocation - DONE *(v0.6 — ingest 512→256MB, API 256→128MB)*
+- [x] ✅ Review CloudWatch log retention policies - DONE *(v0.6 — reduced to 7 days)*
+- [x] ✅ Tag all resources for cost allocation - DONE *(Project + Env tags on all resources)*
+- [x] ✅ Set up budget alerts - DONE *($30/$50/$75 thresholds)*
 - [ ] Implement cost monitoring dashboards
-- [ ] Review and optimize Lambda memory allocation
 - [ ] Implement DynamoDB on-demand vs provisioned analysis
 - [ ] Set up AWS Cost Anomaly Detection
-- [ ] Tag all resources for cost allocation
-- [ ] Review CloudWatch log retention policies
 
 ### **3. Performance Efficiency Pillar**
+- [x] ✅ Review and optimize DynamoDB indexes - DONE *(GSIs on alerts table for signature + src_ip)*
 - [ ] Implement caching strategies (API Gateway, CloudFront)
 - [ ] Optimize Lambda cold starts
-- [ ] Review and optimize DynamoDB indexes
 - [ ] Implement API response compression
 - [ ] Frontend performance optimization (lazy loading, code splitting)
 - [ ] CDN implementation for static assets
 
 ### **4. Operational Excellence Pillar**
-- [ ] Implement comprehensive logging strategy
-- [ ] Set up CloudWatch dashboards for monitoring
+- [x] ✅ Implement comprehensive logging strategy - DONE *(per-instance CW log groups, bootstrap logs, Lambda logs)*
+- [x] ✅ Set up CloudWatch dashboards for monitoring - DONE *(S3 pipeline dashboard)*
+- [x] ✅ Set up alerting for critical metrics - DONE *(9 pipeline alarms — Lambda errors, throttles, duration, S3 errors)*
+- [x] ✅ Per-instance data flow health checks - DONE *(v0.8 — real-time pipeline verification)*
 - [ ] Create runbooks for common issues
 - [ ] Implement automated backup strategies
-- [ ] Set up alerting for critical metrics
 - [ ] Document incident response procedures
 
 ### **5. Reliability Pillar**
-- [ ] Implement multi-AZ deployment
+- [x] ✅ Implement multi-AZ deployment - DONE *(Fleet deployer supports any AZ)*
+- [x] ✅ Set up health checks and auto-healing - DONE *(data flow checks, SSM status, EC2 health checks)*
 - [ ] Set up automated backups and restore testing
 - [ ] Implement circuit breakers and retry logic
 - [ ] Create disaster recovery plan
-- [ ] Set up health checks and auto-healing
 - [ ] Implement blue/green deployments
 
 ### **6. Sustainability Pillar**
@@ -377,11 +384,12 @@ function CustomerDashboard({ customerId }) {
 **Estimated Effort:** 2-3 months development + testing
 
 ### **Application Features**
+- [x] ✅ Real-time alerting system - DONE *(DynamoDB alerts table + Alert Ledger with live refresh)*
+- [x] ✅ User authentication and RBAC - DONE *(Cognito user pools + identity pools)*
+- [x] ✅ AI-powered threat analysis - DONE *(Bedrock chat assistant summarizes telemetry)*
 - [ ] Advanced analytics and reporting
-- [ ] Machine learning threat detection
-- [ ] Real-time alerting system
-- [ ] User authentication and RBAC
-- [ ] Multi-tenancy support
+- [ ] Machine learning threat detection (beyond Suricata rules)
+- [ ] Multi-tenancy support (see AWS Organizations section below)
 - [ ] API rate limiting and throttling
 
 ### **DevOps**
@@ -406,7 +414,7 @@ function CustomerDashboard({ customerId }) {
 
 ## 🔐 **Security Enhancements**
 
-- [ ] Implement AWS WAF rules
+- [x] ✅ Implement AWS WAF rules - DONE *(WAF ACL + auto-block from Suricata alerts)*
 - [ ] Set up AWS GuardDuty
 - [ ] Enable AWS Config for compliance
 - [ ] Implement secrets rotation (AWS Secrets Manager)
@@ -454,5 +462,5 @@ function CustomerDashboard({ customerId }) {
 
 ---
 
-**Last Updated:** 2026-01-24
-**Status:** Planning Phase - Deferred until core features complete
+**Last Updated:** 2026-03-22
+**Status:** Phase 1 largely complete — shifting to CI/CD and multi-tenancy planning
