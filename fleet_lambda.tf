@@ -98,6 +98,37 @@ resource "aws_iam_role_policy" "lambda_fleet" {
           "cloudwatch:ListMetrics"
         ],
         Resource = "*"
+      },
+      # CloudWatch Logs – data-flow health checks
+      # DescribeLogGroups is a list-type API that requires "*" resource
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:DescribeLogGroups"
+        ],
+        Resource = "*"
+      },
+      # Scoped: streams + subscription filters only on honeypot log groups
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:DescribeLogStreams",
+          "logs:DescribeSubscriptionFilters"
+        ],
+        Resource = "arn:aws:logs:*:*:log-group:/honeypot/suricata/*"
+      },
+      # DynamoDB – data-flow health checks (recent events / alerts)
+      {
+        Effect = "Allow",
+        Action = [
+          "dynamodb:Query"
+        ],
+        Resource = [
+          aws_dynamodb_table.suricata_events.arn,
+          "${aws_dynamodb_table.suricata_events.arn}/index/*",
+          aws_dynamodb_table.phantomwall_alerts[0].arn,
+          "${aws_dynamodb_table.phantomwall_alerts[0].arn}/index/*"
+        ]
       }
     ]
   })
@@ -119,12 +150,15 @@ resource "aws_lambda_function" "fleet_manager" {
   runtime          = "python3.11"
   filename         = data.archive_file.fleet_manager.output_path
   source_code_hash = data.archive_file.fleet_manager.output_base64sha256
-  timeout          = 30
+  timeout          = 60
   memory_size      = 128
 
   environment {
     variables = {
-      PROJECT_TAG = var.project_name
+      PROJECT_TAG         = var.project_name
+      CW_LOG_GROUP_PREFIX = "/honeypot/suricata"
+      EVENTS_TABLE        = aws_dynamodb_table.suricata_events.name
+      ALERTS_TABLE        = aws_dynamodb_table.phantomwall_alerts[0].name
     }
   }
 

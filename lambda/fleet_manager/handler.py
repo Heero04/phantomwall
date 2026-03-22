@@ -20,8 +20,13 @@ import boto3
 _ec2 = boto3.client("ec2")
 _ssm = boto3.client("ssm")
 _cw = boto3.client("cloudwatch")
+_logs = boto3.client("logs")
+_dynamodb = boto3.client("dynamodb")
 
 PROJECT_TAG = os.environ.get("PROJECT_TAG", "phantomwall")
+CW_LOG_GROUP_PREFIX = os.environ.get("CW_LOG_GROUP_PREFIX", "/honeypot/suricata")
+EVENTS_TABLE = os.environ.get("EVENTS_TABLE", "phantomwall-dynamodb-events-dev")
+ALERTS_TABLE = os.environ.get("ALERTS_TABLE", "phantomwall-alerts-dev")
 
 
 # ── Helpers ─────────────────────────────────────────────────────
@@ -99,6 +104,85 @@ def _get_last_seen(instance: dict, status: str, now) -> str:
             pass
 
     return now.isoformat() + "Z"
+
+
+# ── Data Flow Health Check ──────────────────────────────────────
+def _check_data_flow(instance_id: str) -> dict:
+    """Check the per-instance data pipeline: log group → streams → filters.
+
+    Returns a dict with boolean/int checks the frontend renders as checkmarks.
+    Pipeline: CW Agent → Log Group → Log Stream → Subscription Filters → Lambdas
+    If streams have data AND subscription filters exist, data flows to DynamoDB + S3.
+    Best-effort: any AWS error degrades gracefully rather than crashing.
+    """
+    result = {
+        "log_group": False,
+        "log_stream": False,
+        "log_stream_age": None,       # human-readable age of last data
+        "subscription_filters": 0,
+        "events_pipeline": False,      # ingest Lambda subscription exists
+        "alerts_pipeline": False,      # alert-indexer subscription exists
+    }
+    log_group_name = f"{CW_LOG_GROUP_PREFIX}/{instance_id}"
+
+    # 1. Log group exists?
+    try:
+        resp = _logs.describe_log_groups(
+            logGroupNamePrefix=log_group_name, limit=1
+        )
+        groups = resp.get("logGroups", [])
+        result["log_group"] = any(
+            g["logGroupName"] == log_group_name for g in groups
+        )
+    except Exception as exc:
+        print(f"[data_flow] log_group check failed for {log_group_name}: {exc}")
+
+    if not result["log_group"]:
+        return result
+
+    # 2. Log streams with recent data?
+    try:
+        resp = _logs.describe_log_streams(
+            logGroupName=log_group_name,
+            orderBy="LastEventTime",
+            descending=True,
+            limit=1,
+        )
+        streams = resp.get("logStreams", [])
+        if streams:
+            last_ts = streams[0].get("lastEventTimestamp", 0)
+            now_ms = int(datetime.datetime.utcnow().timestamp() * 1000)
+            age_sec = (now_ms - last_ts) / 1000
+            result["log_stream"] = age_sec < 1800  # 30 min
+            # Human-readable age
+            if age_sec < 60:
+                result["log_stream_age"] = f"{int(age_sec)}s ago"
+            elif age_sec < 3600:
+                result["log_stream_age"] = f"{int(age_sec / 60)}m ago"
+            elif age_sec < 86400:
+                result["log_stream_age"] = f"{int(age_sec / 3600)}h ago"
+            else:
+                result["log_stream_age"] = f"{int(age_sec / 86400)}d ago"
+    except Exception as exc:
+        print(f"[data_flow] log_stream check failed: {exc}")
+
+    # 3. Subscription filters — check each one by name
+    try:
+        resp = _logs.describe_subscription_filters(
+            logGroupName=log_group_name
+        )
+        filters = resp.get("subscriptionFilters", [])
+        result["subscription_filters"] = len(filters)
+        for f in filters:
+            dest = f.get("destinationArn", "")
+            if "ingest" in dest.lower():
+                result["events_pipeline"] = True
+            if "alert" in dest.lower():
+                result["alerts_pipeline"] = True
+    except Exception as exc:
+        print(f"[data_flow] subscription_filters check failed: {exc}")
+
+    return result
 
 
 # ── GET /fleet/instances ────────────────────────────────────────
@@ -281,6 +365,7 @@ def _list_fleet(params: dict) -> dict:
                 "ssm_connected": is_ssm_online,
                 "cpu": cpu_map.get(iid, 0),
                 "ram": ram_map.get(iid, 0),
+                "data_flow": _check_data_flow(iid) if status == "running" else None,
             }
         )
 

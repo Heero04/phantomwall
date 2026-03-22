@@ -441,6 +441,68 @@
   flex-wrap: wrap;
 }
 
+/* ── Data Flow Health Checks ──────────────────────────────────── */
+.fleet__data-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 10px;
+}
+
+.fleet__data-flow-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.fleet__data-flow-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+}
+
+.fleet__df-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.fleet__df-item--ok {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+.fleet__df-item--fail {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+.fleet__df-icon {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.fleet__df-label {
+  font-weight: 500;
+}
+
+.fleet__df-detail {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  margin-left: 0.1rem;
+}
+
 /* ── Card meters ──────────────────────────────────────────────── */
 .fleet__card-meters {
   display: flex;

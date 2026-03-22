@@ -227,6 +227,17 @@ function AZBar({ fleet }) {
   )
 }
 
+/* ── Data Flow Check Item ──────────────────────────────────────── */
+function DataFlowItem({ ok, label, detail }) {
+  return (
+    <span className={`fleet__df-item ${ok ? 'fleet__df-item--ok' : 'fleet__df-item--fail'}`}>
+      <span className="fleet__df-icon">{ok ? '✅' : '❌'}</span>
+      <span className="fleet__df-label">{label}</span>
+      {detail && <span className="fleet__df-detail">{detail}</span>}
+    </span>
+  )
+}
+
 /* ── Instance Card (for card view) ────────────────────────────── */
 function InstanceCard({ item, busyAction, onAction, onDestroy }) {
   const hc = healthCheckLabel(item.health_checks)
@@ -278,6 +289,20 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
           SSM {item.ssm_connected ? 'Online' : 'Offline'}
         </span>
       </div>
+
+      {/* ── Data Flow Health Checks ────────────────────────── */}
+      {item.data_flow && (
+        <div className="fleet__data-flow">
+          <span className="fleet__data-flow-title">📡 Data Flow</span>
+          <div className="fleet__data-flow-checks">
+            <DataFlowItem ok={item.data_flow.log_group}           label="Log Group" />
+            <DataFlowItem ok={item.data_flow.log_stream}          label="Log Stream" detail={item.data_flow.log_stream_age} />
+            <DataFlowItem ok={item.data_flow.subscription_filters >= 2} label="Filters" detail={`${item.data_flow.subscription_filters}/2`} />
+            <DataFlowItem ok={item.data_flow.events_pipeline}     label="Events → DynamoDB" />
+            <DataFlowItem ok={item.data_flow.alerts_pipeline}     label="Alerts → DynamoDB" />
+          </div>
+        </div>
+      )}
 
       {!isStopped && (
         <div className="fleet__card-meters">
