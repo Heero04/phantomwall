@@ -29,23 +29,23 @@ The platform leverages Suricata IDS, AWS Lambda, DynamoDB, and API Gateway to cr
 
 ## Screenshots
 
-### Quick Access Dashboard
-![Quick Access Dashboard](docs/screenshots/dashboard-quickaccess.png)
-
-### Security Alert Ledger
-![Security Alert Ledger](docs/screenshots/dashboard-alerts.png)
+### Command Center
+![Command Center](docs/screenshots/dashboard-quickaccess.png)
 
 ### Traffic Ledger
 ![Traffic Ledger](docs/screenshots/dashboard-trafficledger.png)
 
+### Alerts & Investigation
+![Alerts & Investigation](docs/screenshots/dashboard-alerts.png)
+
 ### Fleet Manager
 ![Fleet Manager](docs/screenshots/dashboard-fleetmanager.png)
 
-### Threat Intelligence
-![Threat Intelligence](docs/screenshots/dashboard-threatintel.png)
+### S3 Log Archive
+![S3 Log Archive](docs/screenshots/dashboard-logexplorer.png)
 
-### Log Explorer
-![Log Explorer](docs/screenshots/dashboard-logexplorer.png)
+### Intel & Analytics
+![Intel & Analytics](docs/screenshots/dashboard-threatintel.png)
 
 ---
 
