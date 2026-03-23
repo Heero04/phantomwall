@@ -7,14 +7,15 @@ A cloud-native honeypot security platform that deploys intelligent decoy systems
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Features](#features)
-3. [Architecture Overview](#architecture-overview)
-4. [Architecture Diagram](#architecture-diagram)
-5. [Technologies Used](#technologies-used)
-6. [Prerequisites](#prerequisites)
-7. [Setup & Deployment](#setup--deployment)
-8. [Usage](#usage)
-9. [Future Enhancements](#future-enhancements)
+2. [Screenshots](#screenshots)
+3. [Features](#features)
+4. [Architecture Overview](#architecture-overview)
+5. [Architecture Diagram](#architecture-diagram)
+6. [Technologies Used](#technologies-used)
+7. [Prerequisites](#prerequisites)
+8. [Setup & Deployment](#setup--deployment)
+9. [Usage](#usage)
+10. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -23,6 +24,28 @@ A cloud-native honeypot security platform that deploys intelligent decoy systems
 **PhantomWall** is a serverless honeypot-as-a-service platform built on AWS that automatically detects and analyzes malicious activity. It combines honeypot technology with modern cloud architecture to provide real-time threat intelligence, automated incident response, and comprehensive security analytics through an interactive dashboard.
 
 The platform leverages Suricata IDS, AWS Lambda, DynamoDB, and API Gateway to create a scalable, cost-effective security monitoring solution suitable for organizations of any size.
+
+---
+
+## Screenshots
+
+### Quick Access Dashboard
+![Quick Access Dashboard](docs/screenshots/dashboard-quickaccess.png)
+
+### Security Alert Ledger
+![Security Alert Ledger](docs/screenshots/dashboard-alerts.png)
+
+### Traffic Ledger
+![Traffic Ledger](docs/screenshots/dashboard-trafficledger.png)
+
+### Fleet Manager
+![Fleet Manager](docs/screenshots/dashboard-fleetmanager.png)
+
+### Threat Intelligence
+![Threat Intelligence](docs/screenshots/dashboard-threatintel.png)
+
+### Log Explorer
+![Log Explorer](docs/screenshots/dashboard-logexplorer.png)
 
 ---
 
