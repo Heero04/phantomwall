@@ -1019,6 +1019,15 @@ export default function HoneypotFleetManager() {
                             </button>
                           )
                         })}
+                        <button
+                          type="button"
+                          className="fleet__action-btn fleet__action-btn--destroy"
+                          disabled={Boolean(busyAction)}
+                          onClick={() => handleDestroy(item)}
+                          title="Terminate this honeypot permanently"
+                        >
+                          {busyAction === `${item.instance_id}:destroy` ? '...' : '🗑️ DESTROY'}
+                        </button>
                       </div>
                     </td>
                   </tr>
