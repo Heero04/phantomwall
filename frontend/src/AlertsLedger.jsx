@@ -321,10 +321,6 @@ const AlertsLedger = () => {
     URL.revokeObjectURL(url);
   };
 
-  const exportPdf = () => {
-    window.print();
-  };
-
   const getActionBadgeStyles = (actionValue) => {
     const action = (actionValue || '').toLowerCase();
 
@@ -638,21 +634,6 @@ const AlertsLedger = () => {
                     }}
                   >
                     Export CSV
-                  </button>
-                  <button
-                    onClick={exportPdf}
-                    style={{
-                      background: 'rgba(148, 163, 184, 0.12)',
-                      border: '1px solid rgba(148, 163, 184, 0.35)',
-                      borderRadius: '0.5rem',
-                      color: '#cbd5e1',
-                      fontSize: '0.78rem',
-                      fontWeight: 700,
-                      padding: '0.45rem 0.75rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Export PDF
                   </button>
                   <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{filteredAlerts.length} alerts</span>
                   <span style={{ fontSize: '0.75rem', color: isRefreshing ? '#22d3ee' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>

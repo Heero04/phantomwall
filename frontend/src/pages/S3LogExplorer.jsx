@@ -115,18 +115,24 @@ export default function S3LogExplorer() {
   }, [])
 
   /* ── Build query params ──────────────────────────────────── */
-  const buildParams = useCallback((forcedEventType = null) => {
-    const params = new URLSearchParams({ date, limit: String(limit) })
-    const selectedEvent = forcedEventType ?? eventType
+  const buildParams = useCallback((overrides = {}) => {
+    const selectedDate = overrides.date ?? date
+    const selectedLimit = overrides.limit ?? limit
+    const selectedEvent = overrides.eventType ?? eventType
+    const selectedSrcIp = overrides.srcIp ?? srcIp
+    const selectedDestIp = overrides.destIp ?? destIp
+    const selectedProto = overrides.proto ?? proto
+
+    const params = new URLSearchParams({ date: selectedDate, limit: String(selectedLimit) })
     if (selectedEvent) params.set('event_type', selectedEvent)
-    if (srcIp) params.set('src_ip', srcIp)
-    if (destIp) params.set('dest_ip', destIp)
-    if (proto) params.set('proto', proto)
+    if (selectedSrcIp) params.set('src_ip', selectedSrcIp)
+    if (selectedDestIp) params.set('dest_ip', selectedDestIp)
+    if (selectedProto) params.set('proto', selectedProto)
     return params
   }, [date, limit, eventType, srcIp, destIp, proto])
 
   /* ── Fetch logs ──────────────────────────────────────────── */
-  const fetchLogs = useCallback(async (forcedEventType = null) => {
+  const fetchLogs = useCallback(async (overrides = {}) => {
     if (!API_URL) {
       setError('API URL is not configured. Set VITE_SURICATA_API_URL in .env')
       return
@@ -136,19 +142,23 @@ export default function S3LogExplorer() {
     const t0 = performance.now()
 
     try {
-      const params = buildParams(forcedEventType)
+      const params = buildParams(overrides)
       const response = await fetch(`${API_URL}/logs?${params}`)
       if (!response.ok) throw new Error(`Athena query failed (${response.status})`)
       const data = await response.json()
       setLogs(data)
       setQueryTime(((performance.now() - t0) / 1000).toFixed(2))
 
+      const historyDate = overrides.date ?? date
+      const historyEventType = overrides.eventType ?? (eventType || 'all')
+      const historySrcIp = overrides.srcIp ?? srcIp || '*'
+
       // Add to history
       const historyEntry = {
         id: Date.now(),
-        date,
-        eventType: forcedEventType ?? (eventType || 'all'),
-        srcIp: srcIp || '*',
+        date: historyDate,
+        eventType: historyEventType,
+        srcIp: historySrcIp,
         resultCount: data.count || 0,
         scannedMb: data.data_scanned_mb,
         timestamp: new Date().toISOString(),
@@ -162,10 +172,11 @@ export default function S3LogExplorer() {
   }, [buildParams, date, eventType, srcIp])
 
   /* ── Fetch summary ───────────────────────────────────────── */
-  const fetchSummary = useCallback(async () => {
+  const fetchSummary = useCallback(async (dateOverride = null) => {
     if (!API_URL) return
     try {
-      const response = await fetch(`${API_URL}/logs?action=summary&date=${date}`)
+      const selectedDate = dateOverride || date
+      const response = await fetch(`${API_URL}/logs?action=summary&date=${selectedDate}`)
       if (!response.ok) return
       const data = await response.json()
       setSummary(data)
@@ -183,7 +194,7 @@ export default function S3LogExplorer() {
 
   const handleEventTypeClick = async (type) => {
     setEventType(type)
-    await fetchLogs(type)
+    await fetchLogs({ eventType: type })
   }
 
   const handleCopyIp = (ip) => {
@@ -208,10 +219,27 @@ export default function S3LogExplorer() {
     URL.revokeObjectURL(url)
   }
 
-  const handleReplay = (entry) => {
+  const handleReplay = async (entry) => {
     setDate(entry.date)
     setEventType(entry.eventType === 'all' ? '' : entry.eventType)
     setSrcIp(entry.srcIp === '*' ? '' : entry.srcIp)
+    await Promise.all([
+      fetchLogs({
+        date: entry.date,
+        eventType: entry.eventType === 'all' ? '' : entry.eventType,
+        srcIp: entry.srcIp === '*' ? '' : entry.srcIp,
+      }),
+      fetchSummary(entry.date),
+    ])
+  }
+
+  const handleClearFilters = () => {
+    setEventType('')
+    setSrcIp('')
+    setDestIp('')
+    setProto('')
+    setLimit(100)
+    setError('')
   }
 
   /* ── Derived stats ───────────────────────────────────────── */
@@ -335,6 +363,15 @@ export default function S3LogExplorer() {
               ) : (
                 <>🔍 Search S3 Logs</>
               )}
+            </button>
+            <button
+              type="button"
+              className="s3x__clear-btn"
+              onClick={handleClearFilters}
+              disabled={loading}
+              title="Reset query filters to defaults"
+            >
+              Reset Filters
             </button>
             <kbd className="s3x__kbd">Ctrl + Enter</kbd>
           </div>
