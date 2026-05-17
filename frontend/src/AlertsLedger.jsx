@@ -21,11 +21,17 @@ const AlertsLedger = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [responseTarget, setResponseTarget] = useState(null);
   const [responseStatus, setResponseStatus] = useState(null);
+  const [responseBusy, setResponseBusy] = useState(false);
+  const [socQueueItems, setSocQueueItems] = useState([]);
 
   useEffect(() => {
     fetchAlerts();
     const interval = setInterval(fetchAlerts, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    loadSocQueue();
   }, []);
 
   const fetchAlerts = async () => {
@@ -170,9 +176,99 @@ const AlertsLedger = () => {
     setResponseStatus(null);
   };
 
-  const runMockResponse = (action) => {
+  const loadSocQueue = () => {
+    try {
+      const items = JSON.parse(localStorage.getItem('soc_queue_alerts') || '[]');
+      setSocQueueItems(Array.isArray(items) ? items : []);
+    } catch {
+      setSocQueueItems([]);
+    }
+  };
+
+  const postJson = async (path, payload) => {
+    if (!API_URL) throw new Error('VITE_SURICATA_API_URL is not configured.');
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    let data = null;
+    try { data = await response.json(); } catch { /* noop */ }
+    if (!response.ok) {
+      const errMsg = data?.error || data?.message || `Request failed (${response.status})`;
+      throw new Error(errMsg);
+    }
+    return data || {};
+  };
+
+  const addLocalRecord = (key, record, max = 100) => {
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift(record);
+    localStorage.setItem(key, JSON.stringify(existing.slice(0, max)));
+  };
+
+  const runResponseAction = async (action) => {
     if (!responseTarget) return;
-    setResponseStatus(`Queued: ${action} for ${responseTarget.source}`);
+    setResponseBusy(true);
+    setResponseStatus(null);
+    try {
+      if (action === 'Block IP in WAF') {
+        const data = await postJson('/waf/block-ip', { ip: responseTarget.source });
+        setResponseStatus(`Blocked ${responseTarget.source} in WAF - ${data.message || 'done'}`);
+        return;
+      }
+
+      if (action === 'Escalate to SOC Queue') {
+        const queueItem = {
+          queue_id: `SOC-${Date.now().toString(36).toUpperCase()}`,
+          created_at: new Date().toISOString(),
+          status: 'queued',
+          source: 'alerts-ledger',
+          source_ip: responseTarget.source,
+          threat: responseTarget.type,
+          severity: responseTarget.severity,
+          category: responseTarget.category,
+          country: responseTarget.country,
+          protocol: responseTarget.proto,
+          destination: `${responseTarget.dest_ip || ''}${responseTarget.dest_port ? `:${responseTarget.dest_port}` : ''}`
+        };
+        addLocalRecord('soc_queue_alerts', queueItem);
+        loadSocQueue();
+        setResponseStatus(`Escalated to SOC queue: ${queueItem.queue_id} for ${responseTarget.source}`);
+        return;
+      }
+
+      if (action === 'Create Incident Ticket') {
+        const incident = {
+          incident_id: `INC-${Date.now().toString(36).toUpperCase()}`,
+          created_at: new Date().toISOString(),
+          status: 'open',
+          source: 'alerts-ledger',
+          summary: 'Security alert escalated from Alerts Ledger',
+          event: {
+            src_ip: responseTarget.source,
+            dest_ip: responseTarget.dest_ip,
+            dest_port: responseTarget.dest_port,
+            protocol: responseTarget.proto,
+            threat_type: responseTarget.type,
+            severity: responseTarget.severity,
+            category: responseTarget.category,
+            country: responseTarget.country,
+            action: responseTarget.action,
+            honeypot_name: responseTarget.honeypot_name || ''
+          }
+        };
+        addLocalRecord('traffic_incidents', incident);
+        setResponseStatus(`Incident ${incident.incident_id} created and stored locally for ${responseTarget.source}`);
+        return;
+      }
+
+      setResponseStatus(`Unknown action: ${action}`);
+    } catch (err) {
+      setResponseStatus(`Failed: ${action} for ${responseTarget.source} - ${err.message}`);
+    } finally {
+      setResponseBusy(false);
+    }
   };
 
   const isPrivateIp = (ip) => {
@@ -899,6 +995,60 @@ const AlertsLedger = () => {
                   })}
                 </div>
               )}
+
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(100, 116, 139, 0.3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <h3 style={{ margin: 0, color: '#fff', fontSize: '1rem' }}>SOC Queue (Local)</h3>
+                  <button
+                    onClick={loadSocQueue}
+                    style={{
+                      background: 'rgba(34, 211, 238, 0.12)',
+                      border: '1px solid rgba(34, 211, 238, 0.35)',
+                      borderRadius: '0.45rem',
+                      color: '#67e8f9',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '0.25rem 0.5rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {socQueueItems.length === 0 ? (
+                  <div style={{ color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center', padding: '0.75rem 0' }}>
+                    No queued escalations yet.
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gap: '0.45rem', maxHeight: '220px', overflowY: 'auto' }}>
+                    {socQueueItems.slice(0, 8).map((item) => (
+                      <div
+                        key={item.queue_id}
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.58)',
+                          border: '1px solid rgba(100, 116, 139, 0.32)',
+                          borderRadius: '0.55rem',
+                          padding: '0.55rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.45rem' }}>
+                          <span style={{ color: '#fcd34d', fontWeight: 700, fontSize: '0.74rem' }}>{item.queue_id}</span>
+                          <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>
+                            {item.created_at ? new Date(item.created_at).toLocaleTimeString() : '—'}
+                          </span>
+                        </div>
+                        <div style={{ color: '#e2e8f0', fontSize: '0.78rem', marginTop: '0.25rem' }}>
+                          {item.source_ip} • {item.threat || 'Unknown threat'}
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: '0.18rem', textTransform: 'uppercase' }}>
+                          {item.severity || 'unknown'} • {item.status || 'queued'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -937,7 +1087,8 @@ const AlertsLedger = () => {
 
             <div style={{ display: 'grid', gap: '0.5rem' }}>
               <button
-                onClick={() => runMockResponse('Block IP in WAF')}
+                disabled={responseBusy}
+                onClick={() => runResponseAction('Block IP in WAF')}
                 style={{
                   border: '1px solid rgba(248, 113, 113, 0.4)',
                   background: 'rgba(248, 113, 113, 0.12)',
@@ -945,14 +1096,16 @@ const AlertsLedger = () => {
                   borderRadius: '0.5rem',
                   padding: '0.55rem 0.7rem',
                   textAlign: 'left',
-                  cursor: 'pointer',
-                  fontWeight: 700
+                  cursor: responseBusy ? 'not-allowed' : 'pointer',
+                  fontWeight: 700,
+                  opacity: responseBusy ? 0.75 : 1
                 }}
               >
                 Block IP in WAF
               </button>
               <button
-                onClick={() => runMockResponse('Escalate to SOC Queue')}
+                disabled={responseBusy}
+                onClick={() => runResponseAction('Escalate to SOC Queue')}
                 style={{
                   border: '1px solid rgba(245, 158, 11, 0.4)',
                   background: 'rgba(245, 158, 11, 0.12)',
@@ -960,14 +1113,16 @@ const AlertsLedger = () => {
                   borderRadius: '0.5rem',
                   padding: '0.55rem 0.7rem',
                   textAlign: 'left',
-                  cursor: 'pointer',
-                  fontWeight: 700
+                  cursor: responseBusy ? 'not-allowed' : 'pointer',
+                  fontWeight: 700,
+                  opacity: responseBusy ? 0.75 : 1
                 }}
               >
                 Escalate to SOC Queue
               </button>
               <button
-                onClick={() => runMockResponse('Create Incident Ticket')}
+                disabled={responseBusy}
+                onClick={() => runResponseAction('Create Incident Ticket')}
                 style={{
                   border: '1px solid rgba(34, 211, 238, 0.4)',
                   background: 'rgba(34, 211, 238, 0.12)',
@@ -975,8 +1130,9 @@ const AlertsLedger = () => {
                   borderRadius: '0.5rem',
                   padding: '0.55rem 0.7rem',
                   textAlign: 'left',
-                  cursor: 'pointer',
-                  fontWeight: 700
+                  cursor: responseBusy ? 'not-allowed' : 'pointer',
+                  fontWeight: 700,
+                  opacity: responseBusy ? 0.75 : 1
                 }}
               >
                 Create Incident Ticket

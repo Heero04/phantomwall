@@ -53,6 +53,7 @@ export default function TrafficView() {
   const [activeProtocols, setActiveProtocols] = useState(new Set());
   const [responseTarget, setResponseTarget]   = useState(null);
   const [responseStatus, setResponseStatus]   = useState(null);
+  const [responseBusy, setResponseBusy]       = useState(false);
   const [actionLog, setActionLog]             = useState([]);
   const [wsStatus, setWsStatus]               = useState('connecting');
   const containerRef   = useRef(null);
@@ -168,23 +169,99 @@ export default function TrafficView() {
   const openResponseModal  = (entry) => { setResponseStatus(null); setResponseTarget(entry); };
   const closeResponseModal = ()      => { setResponseTarget(null); setResponseStatus(null); };
 
+  const postJson = async (path, payload) => {
+    if (!API_URL) throw new Error('VITE_SURICATA_API_URL is not configured.');
+    const res = await fetch(API_URL + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    let data = null;
+    try { data = await res.json(); } catch { /* noop */ }
+    if (!res.ok) {
+      const errMsg = data?.error || data?.message || ('Request failed (' + res.status + ')');
+      throw new Error(errMsg);
+    }
+    return data || {};
+  };
+
+  const pushActionLog = (status) => {
+    setActionLog((prev) => [{ id: String(Date.now()) + Math.random().toString(36).slice(2, 7), status, at: new Date() }, ...prev].slice(0, 8));
+  };
+
   const handleBlockIp = async (ip) => {
-    if (!API_URL) return;
     try {
-      const res  = await fetch(API_URL + '/waf/block-ip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip }) });
-      const data = await res.json();
+      const data = await postJson('/waf/block-ip', { ip });
       const status = 'Blocked ' + ip + ' via WAF - ' + (data.message || 'done');
       setResponseStatus(status);
-      setActionLog((prev) => [{ id: String(Date.now()), status, at: new Date() }, ...prev].slice(0, 8));
+      pushActionLog(status);
     } catch (err) { setResponseStatus('Failed to block ' + ip + ': ' + err.message); }
   };
 
-  const runMockResponse = (label) => {
+  const handleThrottleSource = async (target) => {
+    const ip = target.ip;
+    const enableRateLimit = await postJson('/waf/toggle-rule', { rule_name: 'rate_limiting', enabled: true });
+    const blockIpResult = await postJson('/waf/block-ip', { ip });
+    return 'Throttle active for ' + ip + ' - ' + (enableRateLimit.message || 'rate limiting enabled') + '; ' + (blockIpResult.message || 'IP added to blocklist');
+  };
+
+  const createLocalIncident = (target) => {
+    const incident = {
+      incident_id: 'INC-' + Date.now().toString(36).toUpperCase(),
+      created_at: new Date().toISOString(),
+      status: 'open',
+      source: 'traffic-ledger',
+      summary: 'Security event escalated from Traffic Ledger',
+      event: {
+        src_ip: target.ip,
+        dest_ip: target.dest_ip,
+        port: target.port,
+        protocol: target.protocol,
+        action: target.action,
+        signature: target.signature || '',
+        category: target.category || '',
+        country: target.country || '',
+        honeypot_name: target.honeypot_name || '',
+      },
+    };
+    const existing = JSON.parse(localStorage.getItem('traffic_incidents') || '[]');
+    existing.unshift(incident);
+    localStorage.setItem('traffic_incidents', JSON.stringify(existing.slice(0, 100)));
+    return incident.incident_id;
+  };
+
+  const runResponseAction = async (label) => {
     if (!responseTarget) return;
-    if (label === 'Block Source IP') { handleBlockIp(responseTarget.ip); return; }
-    const status = 'Queued: ' + label + ' for ' + responseTarget.ip;
-    setResponseStatus(status);
-    setActionLog((prev) => [{ id: String(Date.now()), status, at: new Date() }, ...prev].slice(0, 8));
+    setResponseBusy(true);
+    setResponseStatus(null);
+    try {
+      if (label === 'Block Source IP') {
+        await handleBlockIp(responseTarget.ip);
+        return;
+      }
+      if (label === 'Throttle Source') {
+        const status = await handleThrottleSource(responseTarget);
+        setResponseStatus(status);
+        pushActionLog(status);
+        return;
+      }
+      if (label === 'Create Incident Ticket') {
+        const incidentId = createLocalIncident(responseTarget);
+        const status = 'Incident ' + incidentId + ' created and stored locally for ' + responseTarget.ip;
+        setResponseStatus(status);
+        pushActionLog(status);
+        return;
+      }
+      const status = 'Unknown response action: ' + label;
+      setResponseStatus(status);
+      pushActionLog(status);
+    } catch (err) {
+      const status = 'Failed: ' + label + ' for ' + responseTarget.ip + ' - ' + err.message;
+      setResponseStatus(status);
+      pushActionLog(status);
+    } finally {
+      setResponseBusy(false);
+    }
   };
 
   const statusConfig = {
@@ -324,9 +401,9 @@ export default function TrafficView() {
               <p style={{ margin: '0 0 0.8rem', color: '#fcd34d', fontSize: '0.8rem' }}>Private source range detected. WAF block may not be effective for internal IPs.</p>
             )}
             <div style={{ display: 'grid', gap: '0.5rem' }}>
-              <button onClick={() => runMockResponse('Block Source IP')} style={{ border: '1px solid rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.12)', color: '#fca5a5', borderRadius: '0.5rem', padding: '0.55rem 0.7rem', textAlign: 'left', cursor: 'pointer', fontWeight: 700 }}>Block Source IP (WAF Blocklist)</button>
-              <button onClick={() => runMockResponse('Throttle Source')} style={{ border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.12)', color: '#fcd34d', borderRadius: '0.5rem', padding: '0.55rem 0.7rem', textAlign: 'left', cursor: 'pointer', fontWeight: 700 }}>Throttle Source</button>
-              <button onClick={() => runMockResponse('Create Incident Ticket')} style={{ border: '1px solid rgba(34,211,238,0.4)', background: 'rgba(34,211,238,0.12)', color: '#67e8f9', borderRadius: '0.5rem', padding: '0.55rem 0.7rem', textAlign: 'left', cursor: 'pointer', fontWeight: 700 }}>Create Incident Ticket</button>
+              <button disabled={responseBusy} onClick={() => runResponseAction('Block Source IP')} style={{ border: '1px solid rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.12)', color: '#fca5a5', borderRadius: '0.5rem', padding: '0.55rem 0.7rem', textAlign: 'left', cursor: responseBusy ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: responseBusy ? 0.75 : 1 }}>Block Source IP (WAF Blocklist)</button>
+              <button disabled={responseBusy} onClick={() => runResponseAction('Throttle Source')} style={{ border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.12)', color: '#fcd34d', borderRadius: '0.5rem', padding: '0.55rem 0.7rem', textAlign: 'left', cursor: responseBusy ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: responseBusy ? 0.75 : 1 }}>Throttle Source</button>
+              <button disabled={responseBusy} onClick={() => runResponseAction('Create Incident Ticket')} style={{ border: '1px solid rgba(34,211,238,0.4)', background: 'rgba(34,211,238,0.12)', color: '#67e8f9', borderRadius: '0.5rem', padding: '0.55rem 0.7rem', textAlign: 'left', cursor: responseBusy ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: responseBusy ? 0.75 : 1 }}>Create Incident Ticket</button>
             </div>
             {responseStatus && <div style={{ marginTop: '0.7rem', color: '#86efac', fontSize: '0.82rem' }}>{responseStatus}</div>}
             <div style={{ marginTop: '0.9rem', display: 'flex', justifyContent: 'flex-end' }}>
