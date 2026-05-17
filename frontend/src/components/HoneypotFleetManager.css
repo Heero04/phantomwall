@@ -249,6 +249,11 @@
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  padding-top: 0.35rem;
+  margin-top: 0.1rem;
+  border-top: 1px solid rgba(100, 116, 139, 0.18);
 }
 
 .fleet__btn-refresh {
@@ -1303,6 +1308,11 @@
     grid-template-columns: 1fr;
   }
 
+  .fleet__control-buttons {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
   .fleet__card-grid {
     grid-template-columns: 1fr;
   }
@@ -1318,6 +1328,10 @@
   .fleet__ring {
     width: 100px;
     height: 100px;
+  }
+
+  .fleet__modal-field--trap:focus-within {
+    margin-bottom: 9rem;
   }
 }
 
@@ -1451,10 +1465,19 @@
   gap: 0.35rem;
 }
 
+/* Avoid dropdown list visually colliding with footer buttons */
+.fleet__modal-field--trap {
+  transition: margin-bottom 0.2s ease;
+}
+
+.fleet__modal-field--trap:focus-within {
+  margin-bottom: 7.5rem;
+}
+
 .fleet__modal-field > span {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: #e2e8f0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1463,7 +1486,14 @@
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
-  color: #64748b;
+  color: #cbd5e1;
+}
+
+.fleet__modal-hint {
+  margin-top: 0.2rem;
+  color: #e2e8f0;
+  font-size: 0.76rem;
+  line-height: 1.35;
 }
 
 .fleet__modal-field input,
@@ -1471,11 +1501,17 @@
   border: 1px solid rgba(100, 116, 139, 0.3);
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.6);
-  color: #e2e8f0;
+  color: #ffffff;
   padding: 0.55rem 0.75rem;
   font-size: 0.85rem;
+  font-weight: 600;
   outline: none;
   transition: border-color 0.2s;
+}
+
+.fleet__modal-field select option {
+  color: #ffffff;
+  background: #0f172a;
 }
 
 .fleet__modal-field input:focus,
@@ -1498,7 +1534,7 @@
 .fleet__modal-info p {
   margin: 0.2rem 0;
   font-size: 0.78rem;
-  color: #94a3b8;
+  color: #e2e8f0;
 }
 
 .fleet__modal-actions {

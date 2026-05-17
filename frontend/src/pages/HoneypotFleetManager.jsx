@@ -363,6 +363,7 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
    Main Component
    ═══════════════════════════════════════════════════════════════ */
 export default function HoneypotFleetManager() {
+  const NOT_IMPLEMENTED_TRAP_PROFILES = new Set(['rdp', 'dns', 'ftp'])
   const [fleet, setFleet] = useState([])
   const [trapType, setTrapType] = useState('all')
   const [region, setRegion] = useState('us-east-1')
@@ -647,6 +648,15 @@ export default function HoneypotFleetManager() {
     } finally {
       setBusyAction('')
     }
+  }
+
+  const handleTrapProfileChange = (value) => {
+    if (NOT_IMPLEMENTED_TRAP_PROFILES.has(value)) {
+      setError(`Trap profile "${value.toUpperCase()}" is coming soon and not deployable yet.`)
+      return
+    }
+    setError('')
+    setDeployConfig((c) => ({ ...c, trap_profile: value }))
   }
 
   useEffect(() => {
@@ -1149,11 +1159,11 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                   </select>
                 </label>
 
-                <label className="fleet__modal-field">
+                <label className="fleet__modal-field fleet__modal-field--trap">
                   <span>Trap Profile</span>
                   <select
                     value={deployConfig.trap_profile}
-                    onChange={(e) => setDeployConfig(c => ({ ...c, trap_profile: e.target.value }))}
+                    onChange={(e) => handleTrapProfileChange(e.target.value)}
                     disabled={deploying}
                   >
                     <option value="default">🔲 Standard (22, 80, 443, 23, 2222, 8080)</option>
@@ -1161,6 +1171,10 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                     <option value="http">🌐 HTTP (Ports 80, 443)</option>
                     <option value="telnet">📟 Telnet (Port 23)</option>
                     <option value="multi">🎯 Multi-Port (All trap ports)</option>
+                    <option value="" disabled>──────── Coming soon ────────</option>
+                    <option value="rdp">🖥️ RDP (coming soon)</option>
+                    <option value="dns">🌍 DNS (coming soon)</option>
+                    <option value="ftp">📁 FTP (coming soon)</option>
                   </select>
                 </label>
 
@@ -1182,7 +1196,8 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                   <p>⚡ Launches with Suricata IDS + CloudWatch Agent pre-installed.</p>
                   <p>🖥️ Supports Ubuntu 22.04 LTS &amp; Amazon Linux 2023.</p>
                   <p>🛡️ Uses profile-specific security group &amp; IAM profile.</p>
-                  <p>📊 Max 5 honeypots allowed (enforced server-side).</p>
+                  <p>📊 Instance cap is enforced server-side by your environment configuration.</p>
+                  <p>🧭 Deployable trap profiles today: Standard, SSH, HTTP, Telnet, Multi-Port.</p>
                 </div>
 
                 <div className="fleet__modal-actions">
