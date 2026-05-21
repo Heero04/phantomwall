@@ -7,8 +7,9 @@ import S3LogExplorer from './pages/S3LogExplorer'
 import IntelAnalytics from './pages/IntelAnalytics'
 import CloudPosture from './pages/CloudPosture'
 import Settings from './pages/Settings'
+import OrgOnboarding from './pages/OrgOnboarding'
 import ChatAssistant from './ChatAssistant'
-// Auth Components
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { MockAuthProvider } from './contexts/MockAuthContext'
 import Login from './components/Login'
 import Signup from './components/Signup'
@@ -19,7 +20,10 @@ import { ProSidebarProvider, Sidebar, Menu, MenuItem } from 'react-pro-sidebar'
 const SETTINGS_STORAGE_KEY = 'phantomwall_settings'
 const SETTINGS_SAVED_EVENT = 'phantomwall:settings-saved'
 const AUDIT_LOG_STORAGE_KEY = 'phantomwall_audit_log'
+const ORG_ONBOARDING_STORAGE_KEY = 'phantomwall_org_onboarding'
 const DEFAULT_SESSION_TIMEOUT_MIN = 60
+const USE_MOCK_AUTH =
+  import.meta.env.VITE_USE_MOCK_AUTH === 'true' || !import.meta.env.VITE_COGNITO_CLIENT_ID
 
 const getStoredSettings = () => {
   try {
@@ -221,10 +225,67 @@ const NAV_ITEMS = [
 ]
 
 export default function App() {
+  const Provider = USE_MOCK_AUTH ? MockAuthProvider : AuthProvider
+  return (
+    <Provider>
+      <WrappedAppShell />
+    </Provider>
+  )
+}
+
+function WrappedAppShell() {
+  const auth = useAuth()
+  return <AppShell auth={auth} />
+}
+
+function AppShell({ auth }) {
+  const { isAuthenticated, user, logout } = auth
   const [activePage, setActivePage] = useState('console')
   const [userPrefs, setUserPrefs] = useState(() => getStoredSettings())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => Boolean(getStoredSettings().sidebarCollapsed))
   const [sessionLocked, setSessionLocked] = useState(false)
+  const [authView, setAuthView] = useState('login')
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('')
+  const [onboardingRecord, setOnboardingRecord] = useState(null)
+
+  useEffect(() => {
+    if (!user?.email) {
+      setOnboardingRecord(null)
+      return
+    }
+    const onboardingKey = `${ORG_ONBOARDING_STORAGE_KEY}:${user.sub || user.email}`
+    try {
+      const raw = localStorage.getItem(onboardingKey)
+      setOnboardingRecord(raw ? JSON.parse(raw) : null)
+    } catch {
+      setOnboardingRecord(null)
+    }
+  }, [user?.email, user?.sub])
+
+  const completeOrgOnboarding = (details) => {
+    if (!user?.email) return
+    const onboardingKey = `${ORG_ONBOARDING_STORAGE_KEY}:${user.sub || user.email}`
+    const nextRecord = {
+      ...details,
+      completedAt: new Date().toISOString(),
+      userEmail: user.email,
+    }
+    localStorage.setItem(onboardingKey, JSON.stringify(nextRecord))
+    setOnboardingRecord(nextRecord)
+  }
+
+  const handleSignOut = () => {
+    logout()
+    setOnboardingRecord(null)
+    setAuthView('login')
+  }
+
+  const handleResetOnboarding = () => {
+    if (!user?.email) return
+    const onboardingKey = `${ORG_ONBOARDING_STORAGE_KEY}:${user.sub || user.email}`
+    localStorage.removeItem(onboardingKey)
+    setOnboardingRecord(null)
+  }
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -370,6 +431,56 @@ export default function App() {
     </Menu>
   )
 
+  if (!isAuthenticated) {
+    if (authView === 'signup') {
+      return (
+        <Signup
+          onSwitchToLogin={() => setAuthView('login')}
+          onSignupSuccess={(email) => {
+            setPendingVerificationEmail(email)
+            setAuthView('verify')
+          }}
+        />
+      )
+    }
+
+    if (authView === 'verify') {
+      return (
+        <VerifyEmail
+          email={pendingVerificationEmail}
+          onVerifySuccess={() => setAuthView('login')}
+          onCancel={() => setAuthView('signup')}
+        />
+      )
+    }
+
+    if (authView === 'forgot') {
+      return (
+        <ForgotPassword
+          onBackToLogin={() => setAuthView('login')}
+          onResetSuccess={() => setAuthView('login')}
+        />
+      )
+    }
+
+    return (
+      <Login
+        onSwitchToSignup={() => setAuthView('signup')}
+        onSwitchToForgotPassword={() => setAuthView('forgot')}
+      />
+    )
+  }
+
+  if (!onboardingRecord?.completedAt) {
+    return (
+      <OrgOnboarding
+        user={user}
+        onComplete={completeOrgOnboarding}
+        onLogout={logout}
+      />
+    )
+  }
+
   return (
     <ProSidebarProvider>
       <div className={`layout${isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}`}>
@@ -408,7 +519,41 @@ export default function App() {
             </button>
           </div>
           {renderNavItems()}
-          <div className="app-sidebar__footer">v0.4 ? Live telemetry</div>
+          <div className="app-sidebar__footer">
+            <div>v0.4 ? Live telemetry</div>
+            <button
+              type="button"
+              onClick={handleResetOnboarding}
+              style={{
+                marginTop: '0.5rem',
+                background: 'transparent',
+                border: '1px solid rgba(100, 116, 139, 0.4)',
+                color: '#94a3b8',
+                borderRadius: '0.4rem',
+                padding: '0.3rem 0.5rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+              }}
+            >
+              Re-run onboarding
+            </button>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              style={{
+                marginTop: '0.4rem',
+                background: 'transparent',
+                border: '1px solid rgba(100, 116, 139, 0.4)',
+                color: '#cbd5e1',
+                borderRadius: '0.4rem',
+                padding: '0.3rem 0.5rem',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </Sidebar>
 
         <main className="main">
