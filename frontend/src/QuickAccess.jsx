@@ -969,9 +969,18 @@ const QuickAccess = ({ onNavigate }) => {
                 display: 'flex',
                 gap: '1rem'
               }}>
-                <a href="#" style={{ fontSize: '1.25rem' }}>💻</a>
-                <a href="#" style={{ fontSize: '1.25rem' }}>🔗</a>
-                <a href="#" style={{ fontSize: '1.25rem' }}>📧</a>
+                <a
+                  href="https://github.com/Heero04/phantomwall/tree/main"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '1.25rem' }}
+                  aria-label="PhantomWall GitHub repository"
+                  title="GitHub Repository"
+                >
+                  💻
+                </a>
+                <a href="#" style={{ fontSize: '1.25rem' }} aria-label="Website link placeholder" title="Website link coming soon">🔗</a>
+                <a href="#" style={{ fontSize: '1.25rem' }} aria-label="Email link placeholder" title="Email link coming soon">📧</a>
               </div>
             </div>
           </div>

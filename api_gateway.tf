@@ -42,6 +42,13 @@ resource "aws_iam_role_policy" "lambda_api" {
       {
         Effect = "Allow",
         Action = [
+          "ce:GetCostAndUsage"
+        ],
+        Resource = "*"
+      },
+      {
+        Effect = "Allow",
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"
@@ -70,7 +77,9 @@ resource "aws_lambda_function" "suricata_api" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.suricata_events.name
+      TABLE_NAME  = aws_dynamodb_table.suricata_events.name
+      PROJECT_TAG = var.project_name
+      ENVIRONMENT = var.environment
     }
   }
 
@@ -136,6 +145,12 @@ resource "aws_apigatewayv2_route" "suricata_events" {
 resource "aws_apigatewayv2_route" "suricata_metrics" {
   api_id    = aws_apigatewayv2_api.suricata.id
   route_key = "GET /metrics"
+  target    = "integrations/${aws_apigatewayv2_integration.suricata.id}"
+}
+
+resource "aws_apigatewayv2_route" "suricata_costs" {
+  api_id    = aws_apigatewayv2_api.suricata.id
+  route_key = "GET /costs"
   target    = "integrations/${aws_apigatewayv2_integration.suricata.id}"
 }
 

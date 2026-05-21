@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import QuickAccess from './QuickAccess'
 import TrafficView from './TrafficView'
 import AlertsLedger from './AlertsLedger'
@@ -15,6 +15,29 @@ import Signup from './components/Signup'
 import VerifyEmail from './components/VerifyEmail'
 import ForgotPassword from './components/ForgotPassword'
 import { ProSidebarProvider, Sidebar, Menu, MenuItem } from 'react-pro-sidebar'
+
+const SETTINGS_STORAGE_KEY = 'phantomwall_settings'
+const SETTINGS_SAVED_EVENT = 'phantomwall:settings-saved'
+const AUDIT_LOG_STORAGE_KEY = 'phantomwall_audit_log'
+const DEFAULT_SESSION_TIMEOUT_MIN = 60
+
+const getStoredSettings = () => {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+const ACCENT_COLOR_MAP = {
+  cyan: '#06b6d4',
+  emerald: '#10b981',
+  violet: '#8b5cf6',
+  amber: '#f59e0b',
+  rose: '#f43f5e',
+  blue: '#3b82f6',
+}
 
 const NAV_ITEMS = [
   /* ── 1. Command Center (Home) ── */
@@ -199,7 +222,137 @@ const NAV_ITEMS = [
 
 export default function App() {
   const [activePage, setActivePage] = useState('console')
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [userPrefs, setUserPrefs] = useState(() => getStoredSettings())
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => Boolean(getStoredSettings().sidebarCollapsed))
+  const [sessionLocked, setSessionLocked] = useState(false)
+
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const prefs = getStoredSettings()
+      setUserPrefs(prefs)
+      if (typeof prefs.sidebarCollapsed === 'boolean') {
+        setIsSidebarCollapsed(prefs.sidebarCollapsed)
+      }
+    }
+    const onSettingsSaved = (event) => {
+      const prefs = event?.detail || getStoredSettings()
+      setUserPrefs(prefs)
+      if (typeof prefs.sidebarCollapsed === 'boolean') {
+        setIsSidebarCollapsed(prefs.sidebarCollapsed)
+      }
+    }
+    window.addEventListener('storage', syncFromStorage)
+    window.addEventListener(SETTINGS_SAVED_EVENT, onSettingsSaved)
+    return () => {
+      window.removeEventListener('storage', syncFromStorage)
+      window.removeEventListener(SETTINGS_SAVED_EVENT, onSettingsSaved)
+    }
+  }, [])
+
+  const sidebarDisplayName = useMemo(
+    () => (userPrefs.displayName || 'Operator').trim() || 'Operator',
+    [userPrefs.displayName]
+  )
+  const sessionTimeoutMs = useMemo(() => {
+    const configured = Number(userPrefs.sec_sessionTimeoutMin)
+    const safeMinutes = Number.isNaN(configured) ? DEFAULT_SESSION_TIMEOUT_MIN : Math.max(5, configured)
+    return safeMinutes * 60 * 1000
+  }, [userPrefs.sec_sessionTimeoutMin])
+
+  const auditEnabled = Boolean(userPrefs.sec_auditLogging)
+
+  const writeAuditLog = useMemo(
+    () => (action, detail = {}) => {
+      if (!auditEnabled) return
+      try {
+        const existing = JSON.parse(localStorage.getItem(AUDIT_LOG_STORAGE_KEY) || '[]')
+        const entry = {
+          id: `audit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+          timestamp: new Date().toISOString(),
+          action,
+          detail,
+        }
+        existing.unshift(entry)
+        localStorage.setItem(AUDIT_LOG_STORAGE_KEY, JSON.stringify(existing.slice(0, 500)))
+      } catch {
+        // ignore audit persistence failures
+      }
+    },
+    [auditEnabled]
+  )
+
+  useEffect(() => {
+    const root = document.documentElement
+    const body = document.body
+    const theme = userPrefs.theme || 'dark'
+    const accent = ACCENT_COLOR_MAP[userPrefs.accentColor] || ACCENT_COLOR_MAP.cyan
+    const fontSize = userPrefs.fontSize || 'medium'
+    const compact = Boolean(userPrefs.compactMode)
+    const animationsEnabled = userPrefs.animationsEnabled !== false
+
+    root.style.setProperty('--pw-accent', accent)
+    root.dataset.pwTheme = theme
+    body.classList.toggle('pw-compact', compact)
+    body.classList.toggle('pw-reduced-motion', !animationsEnabled)
+    body.classList.toggle('pw-font-small', fontSize === 'small')
+    body.classList.toggle('pw-font-large', fontSize === 'large')
+    body.classList.toggle('pw-font-medium', fontSize !== 'small' && fontSize !== 'large')
+
+    writeAuditLog('ui_preferences_applied', {
+      theme,
+      accent: userPrefs.accentColor || 'cyan',
+      fontSize,
+      compact,
+      animationsEnabled,
+    })
+  }, [
+    userPrefs.theme,
+    userPrefs.accentColor,
+    userPrefs.fontSize,
+    userPrefs.compactMode,
+    userPrefs.animationsEnabled,
+    writeAuditLog,
+  ])
+
+  useEffect(() => {
+    if (sessionLocked) return undefined
+    let timeoutId = null
+    const armTimer = () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+      timeoutId = window.setTimeout(() => {
+        setSessionLocked(true)
+        writeAuditLog('session_locked_timeout', { timeoutMs: sessionTimeoutMs })
+      }, sessionTimeoutMs)
+    }
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart']
+    activityEvents.forEach((evt) => window.addEventListener(evt, armTimer, { passive: true }))
+    armTimer()
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+      activityEvents.forEach((evt) => window.removeEventListener(evt, armTimer))
+    }
+  }, [sessionTimeoutMs, sessionLocked, writeAuditLog])
+
+  const navigateTo = (pageKey) => {
+    setActivePage(pageKey)
+    writeAuditLog('navigation', { page: pageKey })
+  }
+
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev
+      const nextPrefs = { ...getStoredSettings(), sidebarCollapsed: next }
+      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextPrefs))
+      window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, { detail: nextPrefs }))
+      writeAuditLog('sidebar_toggle', { collapsed: next })
+      return next
+    })
+  }
+
+  const unlockSession = () => {
+    setSessionLocked(false)
+    writeAuditLog('session_unlocked')
+  }
 
   const renderNavItems = () => (
     <Menu>
@@ -208,7 +361,7 @@ export default function App() {
           key={item.key}
           active={activePage === item.key}
           className={activePage === item.key ? 'menu-item active' : 'menu-item'}
-          onClick={() => setActivePage(item.key)}
+          onClick={() => navigateTo(item.key)}
           icon={item.icon}
         >
           {item.label}
@@ -228,13 +381,13 @@ export default function App() {
               </div>
               <div>
                 <h1>PhantomWall</h1>
-                <p>Honeypot Console</p>
+                <p>{sidebarDisplayName}</p>
               </div>
             </div>
             <button
               type="button"
               className="sidebar-toggle"
-              onClick={() => setIsSidebarCollapsed(prev => !prev)}
+              onClick={handleToggleSidebar}
               aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
               aria-expanded={!isSidebarCollapsed}
             >
@@ -259,7 +412,7 @@ export default function App() {
         </Sidebar>
 
         <main className="main">
-          {activePage === 'console' && <QuickAccess onNavigate={setActivePage} />}
+          {activePage === 'console' && <QuickAccess onNavigate={navigateTo} />}
           {activePage === 'traffic-view' && <TrafficView />}
           {activePage === 'alerts-ledger' && <AlertsLedger />}
           {activePage === 'fleet' && <HoneypotFleetManager />}
@@ -268,12 +421,22 @@ export default function App() {
           {activePage === 'posture' && <CloudPosture />}
           {activePage === 'settings' && <Settings />}
 
-          <footer className="main__footer">
-            <small>Use SSM where possible; SSH requires private keys stored locally.</small>
-          </footer>
         </main>
 
         <ChatAssistant />
+
+        {sessionLocked && (
+          <div className="session-lock" role="dialog" aria-modal="true" aria-label="Session locked">
+            <div className="session-lock__card">
+              <h2>Session Locked</h2>
+              <p>
+                Your idle timeout is set to {Math.round(sessionTimeoutMs / 60000)} minutes.
+                Click below to resume your session.
+              </p>
+              <button type="button" onClick={unlockSession}>Resume Session</button>
+            </div>
+          </div>
+        )}
       </div>
     </ProSidebarProvider>
   )

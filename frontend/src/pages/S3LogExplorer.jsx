@@ -149,9 +149,9 @@ export default function S3LogExplorer() {
       setLogs(data)
       setQueryTime(((performance.now() - t0) / 1000).toFixed(2))
 
-      const historyDate = overrides.date ?? date
-      const historyEventType = overrides.eventType ?? (eventType || 'all')
-      const historySrcIp = overrides.srcIp ?? srcIp || '*'
+      const historyDate = overrides.date == null ? date : overrides.date
+      const historyEventType = overrides.eventType == null ? (eventType || 'all') : overrides.eventType
+      const historySrcIp = (overrides.srcIp == null ? srcIp : overrides.srcIp) || '*'
 
       // Add to history
       const historyEntry = {

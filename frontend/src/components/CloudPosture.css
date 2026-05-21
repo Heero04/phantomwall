@@ -350,7 +350,7 @@
 .posture__service-count {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #06b6d4;
+  color: var(--pw-accent);
   flex-shrink: 0;
 }
 
@@ -441,7 +441,7 @@
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 .posture__lambda-desc {
@@ -531,7 +531,7 @@
 .posture__role-name {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.78rem;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 .posture__role-service {
@@ -591,7 +591,7 @@
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 .posture__sg-instances {
@@ -657,6 +657,26 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.posture__cost-source {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.45rem;
+  border: 1px solid transparent;
+}
+
+.posture__cost-source--live {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.posture__cost-source--fallback {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.28);
 }
 
 .posture__cost-row {

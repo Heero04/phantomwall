@@ -9,6 +9,8 @@ import '../components/IntelAnalytics.css'
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
 const REFRESH_INTERVAL = 60 // seconds
+const SETTINGS_STORAGE_KEY = 'phantomwall_settings'
+const SETTINGS_SAVED_EVENT = 'phantomwall:settings-saved'
 
 /* ═══════════════════════════════════════════════════════════════
    Constants
@@ -27,6 +29,35 @@ const SEVERITY_COLORS = {
 }
 
 const PROTOCOL_COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
+
+const MAP_TILE_PROVIDERS = {
+  voyager: {
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
+  },
+  light: {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
+  },
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+}
+
+const readUiSettings = () => {
+  try {
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY)
+    if (!raw) return {}
+    return JSON.parse(raw)
+  } catch {
+    return {}
+  }
+}
 
 const EVENT_PALETTE = {
   alert: '#ef4444', dns: '#3b82f6', http: '#10b981', tls: '#8b5cf6',
@@ -127,13 +158,44 @@ export default function IntelAnalytics() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [range, setRange] = useState('7d')
+  const [uiSettings, setUiSettings] = useState(() => readUiSettings())
   const [mapReady, setMapReady] = useState(false)
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL)
   const [lastUpdated, setLastUpdated] = useState(null)
   const mapRef = useRef(null)
 
+  const refreshInterval = useMemo(() => {
+    const raw = Number(uiSettings?.data_autoRefreshSec)
+    if (Number.isNaN(raw)) return REFRESH_INTERVAL
+    return Math.min(300, Math.max(5, raw))
+  }, [uiSettings])
+
+  const mapProviderKey = useMemo(() => {
+    const key = uiSettings?.mapTileProvider
+    return MAP_TILE_PROVIDERS[key] ? key : 'voyager'
+  }, [uiSettings])
+
+  const mapTile = MAP_TILE_PROVIDERS[mapProviderKey]
+
+  useEffect(() => {
+    const sync = () => setUiSettings(readUiSettings())
+    const onSaved = (event) => setUiSettings(event?.detail || readUiSettings())
+    window.addEventListener('storage', sync)
+    window.addEventListener(SETTINGS_SAVED_EVENT, onSaved)
+    return () => {
+      window.removeEventListener('storage', sync)
+      window.removeEventListener(SETTINGS_SAVED_EVENT, onSaved)
+    }
+  }, [])
+
   /* ── Data Fetch ──────────────────────────────────────────── */
   const fetchData = useCallback(async () => {
+    if (!API_URL) {
+      setError('API URL is not configured. Set VITE_SURICATA_API_URL in your frontend .env file.')
+      setLoading(false)
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
@@ -141,13 +203,24 @@ export default function IntelAnalytics() {
         fetch(`${API_URL}/events`),
         fetch(`${API_URL}/metrics`),
       ])
+      const responseErrors = []
       if (alertsRes.ok) {
         const d = await alertsRes.json()
         setAlerts(d.items || [])
+      } else {
+        responseErrors.push(`/events (${alertsRes.status})`)
       }
       if (metricsRes.ok) {
         const m = await metricsRes.json()
         setMetrics(m)
+      } else {
+        responseErrors.push(`/metrics (${metricsRes.status})`)
+      }
+      if (responseErrors.length === 2) {
+        throw new Error(`Failed to load analytics endpoints: ${responseErrors.join(', ')}`)
+      }
+      if (responseErrors.length === 1) {
+        setError(`Partial data loaded. Endpoint unavailable: ${responseErrors[0]}`)
       }
       setLastUpdated(new Date())
     } catch (err) {
@@ -161,18 +234,18 @@ export default function IntelAnalytics() {
 
   /* ── Auto-refresh countdown ─────────────────────────────── */
   useEffect(() => {
-    setCountdown(REFRESH_INTERVAL)
+    setCountdown(refreshInterval)
     const id = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           fetchData()
-          return REFRESH_INTERVAL
+          return refreshInterval
         }
         return prev - 1
       })
     }, 1000)
     return () => clearInterval(id)
-  }, [fetchData])
+  }, [fetchData, refreshInterval])
 
   /* ── Derived Analytics ───────────────────────────────────── */
   const analytics = useMemo(() => {
@@ -292,6 +365,29 @@ export default function IntelAnalytics() {
      Render
      ═══════════════════════════════════════════════════════════ */
   const grade = analytics ? threatGrade((analytics.alertCount / (analytics.total || 1)) * 100) : null
+  const liveMetrics = metrics?.metrics || null
+
+  const handleExportAttackersCsv = () => {
+    if (!analytics?.topIPs?.length) return
+    const headers = ['rank', 'ip', 'country_code', 'events', 'percent_of_total']
+    const rows = analytics.topIPs.map((ip, idx) => [
+      idx + 1,
+      ip.ip || '',
+      ip.cc || '',
+      ip.count || 0,
+      ((ip.count / (analytics.total || 1)) * 100).toFixed(2),
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `intel-top-attackers-${range}-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="intel">
@@ -313,7 +409,7 @@ export default function IntelAnalytics() {
           )}
           <RangeToggle range={range} setRange={setRange} />
           <div className="intel__refresh-row">
-            <button className="intel__refresh-btn" onClick={() => { fetchData(); setCountdown(REFRESH_INTERVAL) }} title="Refresh now">
+            <button className="intel__refresh-btn" onClick={() => { fetchData(); setCountdown(refreshInterval) }} title="Refresh now">
               ↻
             </button>
             <span className="intel__refresh-cd">{countdown}s</span>
@@ -332,8 +428,8 @@ export default function IntelAnalytics() {
           <KpiCard icon="📊" value={analytics.total.toLocaleString()} label="Total Events" accent="#06b6d4" trend={analytics.trendPct} />
           <KpiCard icon="🚨" value={analytics.alertCount.toLocaleString()} label="Alerts" accent="#ef4444" />
           <KpiCard icon="🌍" value={analytics.countries} label="Countries" accent="#8b5cf6" />
-          <KpiCard icon="🎯" value={analytics.uniqueIPs} label="Unique IPs" accent="#f59e0b" />
-          <KpiCard icon="📡" value={analytics.protocols.length} label="Protocols" accent="#10b981" />
+          <KpiCard icon="🎯" value={(liveMetrics?.unique_ips_24h ?? analytics.uniqueIPs).toLocaleString()} label="Unique IPs (24h)" accent="#f59e0b" />
+          <KpiCard icon="📡" value={liveMetrics?.events_per_minute ?? '—'} label="Events / Min (Live)" accent="#10b981" />
         </div>
       )}
 
@@ -382,8 +478,8 @@ export default function IntelAnalytics() {
                   whenReady={() => setMapReady(true)}
                 >
                   <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com">CARTO</a>'
-                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                    attribution={mapTile.attribution}
+                    url={mapTile.url}
                   />
                   {mapReady && analytics.markers.map(m => {
                     const mColor = m.count > 50 ? '#ef4444' : m.count > 20 ? '#f59e0b' : '#06b6d4'
@@ -585,7 +681,15 @@ export default function IntelAnalytics() {
           <section className="intel__card">
             <div className="intel__card-header">
               <h3>🎯 Top Attacker IPs</h3>
-              <span className="intel__card-badge">{analytics.uniqueIPs} unique</span>
+              <div className="intel__card-header-right">
+                {liveMetrics?.top_port && (
+                  <span className="intel__card-badge">Top Port: {liveMetrics.top_port.port} ({liveMetrics.top_port.count})</span>
+                )}
+                <span className="intel__card-badge">{analytics.uniqueIPs} unique</span>
+                <button className="intel__export-btn" onClick={handleExportAttackersCsv} title="Export top attacker IPs as CSV">
+                  📥 Export CSV
+                </button>
+              </div>
             </div>
             <div className="intel__attackers-table-wrap">
               <table className="intel__attackers-table">

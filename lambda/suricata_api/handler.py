@@ -9,6 +9,10 @@ from boto3.dynamodb.conditions import Attr, Key
 
 _dynamodb = boto3.resource("dynamodb")
 _table = _dynamodb.Table(os.environ["TABLE_NAME"])
+_ce = boto3.client("ce", region_name="us-east-1")
+
+PROJECT_TAG = os.environ.get("PROJECT_TAG", "phantomwall")
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "dev")
 
 
 def _response(status_code, body):
@@ -148,6 +152,65 @@ def _calculate_metrics():
     }
 
 
+def _get_costs(event):
+    """Return month-to-date cost scoped to project/environment tags only."""
+    params = (event or {}).get("queryStringParameters") or {}
+    project = (params.get("project") or PROJECT_TAG).strip()
+    env = (params.get("env") or ENVIRONMENT).strip()
+    managed_by = (params.get("managed_by") or "").strip()
+
+    today = datetime.datetime.utcnow().date()
+    start = today.replace(day=1).isoformat()
+    end = (today + datetime.timedelta(days=1)).isoformat()  # CE end date is exclusive
+
+    tag_filters = [
+        {"Tags": {"Key": "Project", "Values": [project], "MatchOptions": ["EQUALS"]}},
+        {"Tags": {"Key": "Env", "Values": [env], "MatchOptions": ["EQUALS"]}},
+    ]
+    if managed_by:
+        tag_filters.append({
+            "Tags": {"Key": "ManagedBy", "Values": [managed_by], "MatchOptions": ["EQUALS"]}
+        })
+
+    response = _ce.get_cost_and_usage(
+        TimePeriod={"Start": start, "End": end},
+        Granularity="MONTHLY",
+        Metrics=["UnblendedCost"],
+        GroupBy=[{"Type": "DIMENSION", "Key": "SERVICE"}],
+        Filter={"And": tag_filters},
+    )
+
+    groups = []
+    total = 0.0
+    for result_by_time in response.get("ResultsByTime", []):
+        for group in result_by_time.get("Groups", []):
+            amount = float(group["Metrics"]["UnblendedCost"]["Amount"])
+            service_name = group.get("Keys", ["Unknown"])[0]
+            groups.append({
+                "service": service_name,
+                "amount_usd": round(amount, 2),
+            })
+            total += amount
+
+    groups.sort(key=lambda x: x["amount_usd"], reverse=True)
+
+    return _response(200, {
+        "scope": {
+            "project": project,
+            "env": env,
+            "managed_by": managed_by or None,
+        },
+        "period": {
+            "start": start,
+            "end_exclusive": end,
+            "label": "month_to_date",
+        },
+        "total_usd": round(total, 2),
+        "services": groups,
+        "currency": "USD",
+    })
+
+
 def _handle_list_events(event):
     params = (event or {}).get("queryStringParameters") or {}
     event_date = params.get("event_date")
@@ -186,6 +249,15 @@ def handler(event, context):
     if route_key == "GET /metrics" or raw_path.endswith("/metrics"):
         metrics = _calculate_metrics()
         return _response(200, metrics)
+
+    if route_key == "GET /costs" or raw_path.endswith("/costs"):
+        try:
+            return _get_costs(event)
+        except Exception as exc:
+            return _response(500, {
+                "error": f"Failed to fetch scoped costs: {str(exc)}",
+                "hint": "Ensure cost allocation tags (Project/Env) are activated in AWS Billing.",
+            })
 
     return _handle_list_events(event)
 

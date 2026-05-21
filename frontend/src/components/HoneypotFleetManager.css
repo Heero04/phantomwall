@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════
    Fleet Manager – Operations Console Dark Theme
-   Palette: #0f172a → #1e293b  |  Accent: #06b6d4 / #67e8f9
+   Palette: #0f172a → #1e293b  |  Accent: var(--pw-accent) / color-mix(in srgb, var(--pw-accent) 80%, #ffffff)
    ═══════════════════════════════════════════════════════════════ */
 
 .fleet {
@@ -64,7 +64,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 .fleet__hero h2 {
@@ -240,7 +240,7 @@
 
 .fleet__control-row select:focus {
   outline: none;
-  border-color: #06b6d4;
+  border-color: var(--pw-accent);
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.18);
 }
 
@@ -261,7 +261,7 @@
   border-radius: 999px;
   min-height: 40px;
   padding: 0 1.2rem;
-  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  background: linear-gradient(135deg, var(--pw-accent) 0%, #0891b2 100%);
   color: #ffffff;
   font-size: 0.82rem;
   font-weight: 600;
@@ -272,7 +272,7 @@
 }
 
 .fleet__btn-refresh:hover:not(:disabled) {
-  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, #22d3ee 0%, var(--pw-accent) 100%);
   box-shadow: 0 0 24px rgba(6, 182, 212, 0.35);
 }
 
@@ -307,7 +307,7 @@
 
 .fleet__view-btn--active {
   background: rgba(6, 182, 212, 0.18);
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -329,7 +329,7 @@
 .fleet__alert--info {
   border-color: rgba(6, 182, 212, 0.3);
   background: rgba(6, 182, 212, 0.08);
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -407,7 +407,7 @@
   display: block;
   font-size: 0.7rem;
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
   margin-top: 0.1rem;
 }
 
@@ -592,7 +592,7 @@
 .fleet__mono {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.76rem;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
 }
 
 .fleet__table tbody td small {
@@ -655,7 +655,7 @@
   align-items: center;
   font-size: 0.68rem;
   font-weight: 600;
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
   background: rgba(6, 182, 212, 0.1);
   border: 1px solid rgba(6, 182, 212, 0.25);
   border-radius: 6px;
@@ -802,7 +802,7 @@
 }
 
 .fleet__meter-fill--ok {
-  background: linear-gradient(90deg, #06b6d4, #22d3ee);
+  background: linear-gradient(90deg, var(--pw-accent), #22d3ee);
   box-shadow: 0 0 5px rgba(6, 182, 212, 0.35);
 }
 
@@ -870,7 +870,7 @@
 }
 
 .fleet__action-btn--reboot {
-  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  background: linear-gradient(135deg, var(--pw-accent), #0891b2);
   box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
 }
 
@@ -956,7 +956,7 @@
 }
 
 .fleet__integration code {
-  color: #67e8f9;
+  color: color-mix(in srgb, var(--pw-accent) 80%, #ffffff);
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
@@ -1516,7 +1516,7 @@
 
 .fleet__modal-field input:focus,
 .fleet__modal-field select:focus {
-  border-color: #06b6d4;
+  border-color: var(--pw-accent);
   box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.15);
 }
 
@@ -1586,6 +1586,6 @@
 
 .fleet__deploy-result-row code {
   font-family: 'JetBrains Mono', monospace;
-  color: #06b6d4;
+  color: var(--pw-accent);
   font-size: 0.78rem;
 }

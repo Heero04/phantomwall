@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import '../components/Settings.css'
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
@@ -7,6 +7,7 @@ const API_URL = import.meta.env.VITE_SURICATA_API_URL
    Defaults — persisted to localStorage
    ═══════════════════════════════════════════════════════════════ */
 const STORAGE_KEY = 'phantomwall_settings'
+const SETTINGS_SAVED_EVENT = 'phantomwall:settings-saved'
 
 const DEFAULT_SETTINGS = {
   /* Profile */
@@ -159,6 +160,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState('profile')
   const [apiTestResult, setApiTestResult] = useState(null)
   const [apiTesting, setApiTesting] = useState(false)
+  const deployedLambdaCount = 10
 
   /* ── Helpers ────────────────────────────────────────────── */
   const update = useCallback((key, value) => {
@@ -169,6 +171,7 @@ export default function Settings() {
   const save = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
+      window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, { detail: settings }))
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch (e) {
@@ -180,6 +183,7 @@ export default function Settings() {
     if (window.confirm('Reset all settings to defaults? This cannot be undone.')) {
       setSettings({ ...DEFAULT_SETTINGS })
       localStorage.removeItem(STORAGE_KEY)
+      window.dispatchEvent(new CustomEvent(SETTINGS_SAVED_EVENT, { detail: { ...DEFAULT_SETTINGS } }))
       setSaved(false)
     }
   }, [])
@@ -189,12 +193,24 @@ export default function Settings() {
     setApiTestResult(null)
     try {
       const start = performance.now()
-      const res = await fetch(`${settings.api_endpoint}/health`, {
-        method: 'GET',
-        signal: AbortSignal.timeout(settings.api_timeout * 1000),
-      })
+      const base = (settings.api_endpoint || '').replace(/\/+$/, '')
+      const probePaths = ['/health', '/metrics', '/events?limit=1']
+      let finalResult = null
+      for (const path of probePaths) {
+        const res = await fetch(`${base}${path}`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(settings.api_timeout * 1000),
+        })
+        if (res.ok) {
+          finalResult = { ok: true, status: res.status, path }
+          break
+        }
+        if (!finalResult) {
+          finalResult = { ok: false, status: res.status, path }
+        }
+      }
       const latency = Math.round(performance.now() - start)
-      setApiTestResult({ ok: res.ok, status: res.status, latency })
+      setApiTestResult({ ...finalResult, latency })
     } catch (err) {
       setApiTestResult({ ok: false, error: err.message })
     } finally {
@@ -228,6 +244,16 @@ export default function Settings() {
       return JSON.stringify(settings[k]) !== JSON.stringify(parsed[k])
     } catch { return false }
   }).length
+
+  const apiGatewayId = useMemo(() => {
+    try {
+      const host = new URL(settings.api_endpoint).hostname
+      const first = host.split('.')[0]
+      return first || 'Not configured'
+    } catch {
+      return 'Not configured'
+    }
+  }, [settings.api_endpoint])
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
@@ -380,8 +406,8 @@ export default function Settings() {
               {apiTestResult && (
                 <div className={`settings__api-result ${apiTestResult.ok ? 'settings__api-result--ok' : 'settings__api-result--fail'}`}>
                   {apiTestResult.ok
-                    ? `✓ Connected — ${apiTestResult.status} (${apiTestResult.latency}ms)`
-                    : `✗ Failed — ${apiTestResult.error || `Status ${apiTestResult.status}`}`}
+                    ? `✓ Connected via ${apiTestResult.path} — ${apiTestResult.status} (${apiTestResult.latency}ms)`
+                    : `✗ Failed — ${apiTestResult.error || `${apiTestResult.path || 'probe'} returned status ${apiTestResult.status}`}`}
                 </div>
               )}
             </FormRow>
@@ -444,16 +470,21 @@ export default function Settings() {
           <Section icon="🎨" title="Appearance" description="Customize the look and feel of PhantomWall.">
             <FormRow label="Theme">
               <div className="settings__theme-picker">
-                {['dark', 'light', 'system'].map(t => (
-                  <button
-                    key={t}
-                    className={`settings__theme-btn ${settings.theme === t ? 'settings__theme-btn--active' : ''}`}
-                    onClick={() => update('theme', t)}
-                  >
-                    <span className="settings__theme-preview" data-theme={t} />
-                    <span>{t.charAt(0).toUpperCase() + t.slice(1)}</span>
-                  </button>
-                ))}
+                {['dark', 'light', 'system'].map(t => {
+                  const implemented = t === 'dark'
+                  return (
+                    <button
+                      key={t}
+                      className={`settings__theme-btn ${settings.theme === t ? 'settings__theme-btn--active' : ''} ${!implemented ? 'settings__theme-btn--disabled' : ''}`}
+                      onClick={() => implemented && update('theme', t)}
+                      disabled={!implemented}
+                      title={!implemented ? 'Coming soon' : ''}
+                    >
+                      <span className="settings__theme-preview" data-theme={t} />
+                      <span>{t.charAt(0).toUpperCase() + t.slice(1)}{!implemented ? ' (soon)' : ''}</span>
+                    </button>
+                  )
+                })}
               </div>
             </FormRow>
             <FormRow label="Accent Color">
@@ -638,11 +669,11 @@ export default function Settings() {
               </div>
               <div className="settings__about-card">
                 <span className="settings__about-label">API Gateway</span>
-                <span className="settings__about-value settings__about-value--mono">k4ddxqs7vi</span>
+                <span className="settings__about-value settings__about-value--mono">{apiGatewayId}</span>
               </div>
               <div className="settings__about-card">
                 <span className="settings__about-label">Lambda Functions</span>
-                <span className="settings__about-value">5 deployed</span>
+                <span className="settings__about-value">{deployedLambdaCount} deployed</span>
               </div>
               <div className="settings__about-card">
                 <span className="settings__about-label">Last Deploy</span>

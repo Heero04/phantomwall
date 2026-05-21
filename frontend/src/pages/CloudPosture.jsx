@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import '../components/CloudPosture.css'
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
+const PROJECT_SCOPE = 'phantomwall'
+const ENV_SCOPE = 'dev'
 
 /* ═══════════════════════════════════════════════════════════════
    Real infrastructure inventory — mirrors your Terraform stack
@@ -87,6 +89,22 @@ const COST_ESTIMATES = [
   { service: 'Bedrock', icon: '🤖', monthly: '$1.80', detail: 'Claude Haiku, ~2K chat queries' },
 ]
 
+const serviceIconFor = (serviceName) => {
+  const s = (serviceName || '').toLowerCase()
+  if (s.includes('ec2')) return '🖥️'
+  if (s.includes('lambda')) return '⚡'
+  if (s.includes('api gateway')) return '🌐'
+  if (s.includes('dynamodb')) return '📊'
+  if (s.includes('simple storage service') || s.includes('s3')) return '📦'
+  if (s.includes('cloudwatch')) return '📈'
+  if (s.includes('waf')) return '🛡️'
+  if (s.includes('cognito')) return '🔐'
+  if (s.includes('athena')) return '🔍'
+  if (s.includes('amplify')) return '🚀'
+  if (s.includes('bedrock')) return '🤖'
+  return '☁️'
+}
+
 const ENV_CONFIG = [
   { key: 'VITE_SURICATA_API_URL', value: API_URL || 'Not configured', sensitive: false },
   { key: 'VITE_WS_URL', value: import.meta.env.VITE_WS_URL || 'Not configured', sensitive: false },
@@ -168,6 +186,7 @@ const Section = ({ id, title, icon, badge, children, defaultOpen = true }) => {
    ═══════════════════════════════════════════════════════════════ */
 export default function CloudPosture() {
   const [lambdaHealth, setLambdaHealth] = useState({})
+  const [liveCost, setLiveCost] = useState(null)
   const [loading, setLoading] = useState(true)
   const [lastScan, setLastScan] = useState(null)
 
@@ -193,6 +212,22 @@ export default function CloudPosture() {
           }
         })
       )
+
+      // Project-scoped cost snapshot (only tagged resources)
+      try {
+        const costRes = await fetch(
+          `${API_URL}/costs?project=${encodeURIComponent(PROJECT_SCOPE)}&env=${encodeURIComponent(ENV_SCOPE)}`
+        )
+        if (costRes.ok) {
+          const costPayload = await costRes.json()
+          setLiveCost(costPayload)
+        } else {
+          setLiveCost(null)
+        }
+      } catch {
+        setLiveCost(null)
+      }
+
       // Functions we can't directly probe — mark as inferred
       LAMBDA_FUNCTIONS.forEach(fn => {
         if (!health[fn.name]) {
@@ -228,9 +263,35 @@ export default function CloudPosture() {
   }, [])
 
   const totalMonthlyCost = useMemo(
-    () => COST_ESTIMATES.reduce((sum, c) => sum + parseFloat(c.monthly.replace('$', '')), 0).toFixed(2),
-    []
+    () => {
+      const hasLiveTotal = liveCost && liveCost.total_usd != null
+      if (hasLiveTotal) return Number(liveCost.total_usd || 0).toFixed(2)
+      return COST_ESTIMATES.reduce((sum, c) => sum + parseFloat(c.monthly.replace('$', '')), 0).toFixed(2)
+    },
+    [liveCost]
   )
+
+  const usingLiveCost = useMemo(() => liveCost && liveCost.total_usd != null, [liveCost])
+
+  const costRows = useMemo(() => {
+    if (!usingLiveCost) return COST_ESTIMATES
+    if (!liveCost?.services?.length) {
+      return [
+        {
+          service: 'Tag-scoped spend',
+          icon: '🔎',
+          monthly: `$${Number(liveCost?.total_usd || 0).toFixed(2)}`,
+          detail: `Live Cost Explorer response returned no matching service rows for Project=${PROJECT_SCOPE}, Env=${ENV_SCOPE} yet.`,
+        },
+      ]
+    }
+    return liveCost.services.map((svc) => ({
+      service: svc.service,
+      icon: serviceIconFor(svc.service),
+      monthly: `$${Number(svc.amount_usd || 0).toFixed(2)}`,
+      detail: `Live Cost Explorer (tag-scoped: Project=${PROJECT_SCOPE}, Env=${ENV_SCOPE})`,
+    }))
+  }, [liveCost, usingLiveCost])
 
   const serviceCount = useMemo(() => ({
     ec2: 4,
@@ -475,9 +536,14 @@ export default function CloudPosture() {
       </Section>
 
       {/* ── Cost Estimator ────────────────────────────────── */}
-      <Section title="Monthly Cost Estimator" icon="💰" badge={`$${totalMonthlyCost}/mo`}>
+      <Section title="Monthly Cost Estimator" icon="💰" badge={usingLiveCost ? `$${totalMonthlyCost} MTD` : `$${totalMonthlyCost}/mo`}>
         <div className="posture__cost-grid">
-          {COST_ESTIMATES.map(c => (
+          <div className={`posture__cost-source ${usingLiveCost ? 'posture__cost-source--live' : 'posture__cost-source--fallback'}`}>
+            {usingLiveCost
+              ? `Live data from Cost Explorer (Project=${PROJECT_SCOPE}, Env=${ENV_SCOPE})`
+              : 'Fallback estimate in use (live Cost Explorer data unavailable)'}
+          </div>
+          {costRows.map(c => (
             <div key={c.service} className="posture__cost-row">
               <span className="posture__cost-icon">{c.icon}</span>
               <div className="posture__cost-info">
@@ -488,8 +554,11 @@ export default function CloudPosture() {
             </div>
           ))}
           <div className="posture__cost-total">
-            <span>Total Estimated Monthly</span>
+            <span>{usingLiveCost ? 'Total Month-to-Date (tag scoped)' : 'Total Estimated Monthly'}</span>
             <span className="posture__cost-total-amount">${totalMonthlyCost}</span>
+          </div>
+          <div className="posture__env-footer">
+            <p>🔎 Cost scope is limited to tags: <code>Project={PROJECT_SCOPE}</code>, <code>Env={ENV_SCOPE}</code>. Activate cost allocation tags in AWS Billing for accurate results.</p>
           </div>
         </div>
       </Section>

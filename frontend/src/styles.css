@@ -314,7 +314,7 @@ html, body {
 .layout {
   display: flex;
   min-height: 100vh;
-  background: #f1f5f9;
+  background: #070b14;
   color: #0f172a;
 }
 
@@ -402,7 +402,7 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 2rem 2.5rem;
+  padding: 0;
   gap: 1.5rem;
 }
 
@@ -451,7 +451,7 @@ html, body {
 .layout {
   display: flex;
   min-height: 100vh;
-  background: #f1f5f9;
+  background: #070b14;
   color: #0f172a;
 }
 
@@ -541,7 +541,7 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 2rem 2.5rem;
+  padding: 0;
   gap: 1.5rem;
 }
 
@@ -577,7 +577,7 @@ html, body {
 }
 /* react-pro-sidebar overrides */
 .layout {
-  background: #f1f5f9;
+  background: #070b14;
 }
 
 .ps-sidebar-root {
@@ -1336,4 +1336,155 @@ html, body {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+/* Remove bright panel outlines across dark pages */
+:is(.qa, .fleet, .posture, .ledger, .traffic, .intel, .settings, .s3x, .archive)
+  :is(
+    [class*="__hero"],
+    [class*="__card"],
+    [class*="__panel"],
+    [class*="__table-wrap"],
+    [class*="__header"],
+    [class*="__controls"]
+  ) {
+  border-color: transparent !important;
+}
+
+:root {
+  --pw-accent: #06b6d4;
+}
+
+html[data-pw-theme='light'] body {
+  background: #edf3fb;
+  color: #0f172a;
+}
+
+html[data-pw-theme='dark'] body {
+  background: #0a0c10;
+  color: #f8fafc;
+}
+
+html[data-pw-theme='system'] {
+  color-scheme: light dark;
+}
+
+html[data-pw-theme='system'] body {
+  background: canvas;
+  color: canvastext;
+}
+
+body.pw-font-small .main {
+  font-size: 13px;
+}
+body.pw-font-small .main * {
+  --pw-font-scale: 0.88;
+}
+
+body.pw-font-medium .main {
+  font-size: 15px;
+}
+
+body.pw-font-large .main {
+  font-size: 17px;
+}
+body.pw-font-large .main * {
+  --pw-font-scale: 1.12;
+}
+
+body.pw-font-small .posture,
+body.pw-font-small .intel,
+body.pw-font-small .fleet,
+body.pw-font-small .settings,
+body.pw-font-small .s3x {
+  font-size: 0.88em;
+}
+
+body.pw-font-large .posture,
+body.pw-font-large .intel,
+body.pw-font-large .fleet,
+body.pw-font-large .settings,
+body.pw-font-large .s3x {
+  font-size: 1.12em;
+}
+
+body.pw-compact .settings,
+body.pw-compact .posture,
+body.pw-compact .intel,
+body.pw-compact .fleet,
+body.pw-compact .s3x,
+body.pw-compact .ledger,
+body.pw-compact .traffic {
+  gap: 0.75rem !important;
+}
+
+body.pw-compact .settings__section-body,
+body.pw-compact .posture__card-body,
+body.pw-compact .intel__card,
+body.pw-compact .fleet__card,
+body.pw-compact .s3x__card {
+  padding-top: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+}
+
+body.pw-reduced-motion *,
+body.pw-reduced-motion *::before,
+body.pw-reduced-motion *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+.ps-sidebar-container .ps-menuitem-root.ps-active {
+  background: color-mix(in srgb, var(--pw-accent) 26%, transparent) !important;
+  color: #ffffff !important;
+}
+
+.sidebar-toggle:hover,
+.sidebar-toggle:focus-visible {
+  background: color-mix(in srgb, var(--pw-accent) 32%, transparent) !important;
+}
+
+.session-lock {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.session-lock__card {
+  width: min(420px, 100%);
+  background: #0f172a;
+  border: 1px solid rgba(100, 116, 139, 0.35);
+  border-radius: 14px;
+  padding: 1.15rem 1.1rem;
+  color: #e2e8f0;
+  box-shadow: 0 20px 44px rgba(2, 6, 23, 0.45);
+}
+
+.session-lock__card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #ffffff;
+}
+
+.session-lock__card p {
+  margin: 0.55rem 0 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.session-lock__card button {
+  margin-top: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--pw-accent) 50%, transparent);
+  background: color-mix(in srgb, var(--pw-accent) 20%, transparent);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 0.42rem 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
 }

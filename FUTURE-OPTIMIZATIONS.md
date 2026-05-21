@@ -13,18 +13,24 @@ Most core features are operational. Focus shifting toward CI/CD, multi-tenancy, 
 ## 🎯 **PRIORITY LIST — What To Focus On Next**
 
 > These are the immediate action items. Each links to the detailed section below.
+> 
+> **Philosophy:** Ship a polished, demo-able product first → then optimize infrastructure.
 
 ### 🔴 High Priority (Do Now)
-- [ ] **CI/CD Pipeline** — GitHub Actions for Terraform validation, frontend build, dependency scanning *(Phase 2 below)*
-- [ ] **Deploy to Production** — Move from dev to prod environment
-- [ ] **CloudFront + CDN** — Cache API responses at edge, free DDoS protection
+- [ ] **Update Architecture Diagram** — Current diagram is outdated. Missing per-instance log groups, fleet deployer, data flow checks, WAF auto-block, alert-indexer pipeline, Bedrock chat. This is the #1 thing recruiters/reviewers look at in your README.
+- [ ] **Build AWS WAF Dashboard Page** — Dedicated frontend page showing WAF rules, blocked IPs, auto-block status, toggle rules on/off. The `waf_api` Lambda already exists — just needs a UI. Completes the security story.
+- [ ] **Add Honeypot Field to CSV Export & S3 Archive** — Alert Ledger CSV is missing honeypot name/instance column. S3 logs need instance_id too. Without this, exported data is incomplete.
+- [ ] **CI/CD Pipeline** — GitHub Actions for Terraform validation (`fmt`, `plan`), frontend build, dependency scanning *(Phase 2 below)*. You already have Gitleaks — now add `terraform validate` + `npm build` checks.
 
 ### 🟡 Medium Priority (Next Sprint)
-- [ ] **API Rate Limiting** — Protect public endpoints from abuse
-- [ ] **AWS Organizations Multi-Tenant** — Per-customer AWS accounts *(Phase 4 below)*
-- [ ] **GuardDuty + Security Hub** — AWS-native threat detection
+- [ ] **CloudFront + CDN** — Cache API responses at edge, free DDoS protection via Shield Standard. ~$0.20/month. Do this before going public.
+- [ ] **Terraform Provider Upgrade v5 → v6** — Update AWS provider from `~> 5.94.1` to `~> 6.38` ([details below](#-terraform-provider-updates)). Do after CI/CD is in place.
+- [ ] **Deploy to Production** — Move from dev to prod. Requires multi-env setup, CloudFront, and polished UI first.
+- [ ] **API Rate Limiting** — Protect public endpoints from abuse before going live.
 
 ### 🟢 Low Priority (Backlog)
+- [ ] **AWS Organizations Multi-Tenant** — Per-customer AWS accounts *(Phase 4 below)*. Critical for SaaS scaling but premature until you have paying customers.
+- [ ] **GuardDuty + Security Hub** — AWS-native threat detection. Nice-to-have, not blocking launch.
 - [ ] **Advanced ML Threat Detection** — Beyond Suricata rule matching
 - [ ] **SOC2/ISO 27001 Compliance** — Security certifications
 
@@ -34,11 +40,9 @@ Most core features are operational. Focus shifting toward CI/CD, multi-tenancy, 
 
 > Smaller tasks and improvements to knock out as time allows.
 
-- [ ] **Update Architecture Diagram** — Current diagram is outdated, missing per-instance log groups, fleet deployer, data flow checks, WAF auto-block, alert-indexer pipeline, Bedrock chat. Create v4 diagram reflecting actual deployed architecture.
-- [ ] **Add Honeypot Field to CSV Export** — Alert Ledger CSV export is missing the honeypot name/instance column. Users need to know which honeypot each alert came from.
-- [ ] **Add Honeypot Field to S3 Log Archive** — S3 log records (written by suricata_ingest Lambda) should include the honeypot instance_id/name so archived logs are filterable per-honeypot.
-- [ ] **Build AWS WAF Dashboard Page** — Dedicated frontend page showing WAF rules, blocked IPs, auto-block status, IP blocklist management, toggle rules on/off. *(waf_api Lambda already exists)*
 - [ ] **Update Cloud Cost Poster Page** — Cost page should dynamically reflect actual AWS spend — add/remove line items as resources change. Show real Budget API data instead of static numbers.
+- [ ] **Fix Dashboard Syntax Errors** — Resolve any JSX compilation issues, clean up unused imports *(from ROADMAP Phase 1)*
+- [ ] **UI/UX Polish** — Loading states, error boundaries, responsive design, hover states, micro-interactions
 
 ---
 
@@ -456,7 +460,50 @@ function CustomerDashboard({ customerId }) {
 
 ---
 
-## 📝 **Documentation Improvements**
+## � **Terraform Provider Updates**
+
+> **Reference:** [Terraform AWS Provider Registry](https://registry.terraform.io/providers/hashicorp/aws/latest/docs) · [GitHub Releases](https://github.com/hashicorp/terraform-provider-aws/releases)
+
+### Current State
+- **PhantomWall is on:** `~> 5.94.1` (in `provider.tf`)
+- **Latest available:** `v6.38.0` (released March 25, 2026)
+- **Major version jump:** v5 → v6 = **breaking changes possible**
+
+### ⚠️ Why Not Update Right Now
+- v5 → v6 is a **major version upgrade** — may have breaking changes to existing resources
+- Current infrastructure is stable and working on v5
+- Need to read the [v6.0.0 upgrade guide](https://github.com/hashicorp/terraform-provider-aws/releases/tag/v6.0.0) before migrating
+- Should be done in a **dedicated branch** with full `terraform plan` review
+
+### 📋 Upgrade Checklist (When Ready)
+- [ ] Read the [v6.0.0 migration guide](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/guides/version-6-upgrade)
+- [ ] Create a dedicated branch: `feature/terraform-v6-upgrade`
+- [ ] Update `provider.tf`: change `version = "~> 5.94.1"` → `version = "~> 6.38"`
+- [ ] Run `terraform init -upgrade`
+- [ ] Run `terraform plan` — review ALL changes carefully
+- [ ] Fix any deprecated resource attributes or breaking changes
+- [ ] Test in dev environment first
+- [ ] Verify all resources: Lambda, DynamoDB, API Gateway, WAF, Cognito, EC2, S3
+- [ ] Merge to Dev → staging → prod
+- [ ] Update `CHANGELOG.md` with version bump
+
+### 🆕 Notable v6 Features (Relevant to PhantomWall)
+- **List Resources:** `aws_lambda_function`, `aws_s3_bucket`, `aws_dynamodb_table` — new list resource types
+- **WAF:** `aws_wafv2_web_acl_rule` — individual rule management (could simplify `waf.tf`)
+- **S3:** Account regional namespaces for buckets
+- **EC2:** `cpu_options` in-place updates, secondary network interfaces
+- **DynamoDB:** `restore_backup_arn` for table restore from backup
+- **Security Hub:** New filter blocks for insights
+- **Budget:** `filter_expression` attribute for budget resources
+
+### 📅 Recommended Timeline
+- **Now:** Document and bookmark — ✅ (this section)
+- **After Phase 2 (CI/CD):** Plan the upgrade with automated testing in place
+- **Before Production:** Ensure running latest stable provider
+
+---
+
+## �📝 **Documentation Improvements**
 
 - [ ] Architecture decision records (ADRs)
 - [ ] API documentation (OpenAPI/Swagger)
@@ -494,5 +541,5 @@ function CustomerDashboard({ customerId }) {
 
 ---
 
-**Last Updated:** 2026-03-22
+**Last Updated:** 2026-03-28
 **Status:** Phase 1 largely complete — focusing on priority list items above
