@@ -71,7 +71,7 @@ jobs:
           VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID }}
           VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID }}
           VITE_USE_MOCK_AUTH: ${{ vars.VITE_USE_MOCK_AUTH }}
-          VITE_SURICATA_API_URL: ${{ vars.VITE_SURICATA_API_URL }}
+          VITE_SURICATA_API_URL: ${{ github.ref_name == 'showcase' && '' || vars.VITE_SURICATA_API_URL }}
         run: npm run build
 
       - name: Deploy to S3
