@@ -336,3 +336,24 @@
     padding: 1.25rem;
   }
 }
+
+@media (max-width: 768px) {
+  .qa {
+    padding: 1rem 0.75rem;
+  }
+  .qa__hero {
+    flex-direction: column;
+    padding: 1.25rem 1rem;
+    gap: 1rem;
+  }
+  .qa__hero-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .qa__hero-actions button {
+    flex: 1;
+    min-width: 0;
+  }
+}
