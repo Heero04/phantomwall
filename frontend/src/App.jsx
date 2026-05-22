@@ -433,6 +433,16 @@ export default function App() {
                 <p>{sidebarDisplayName}</p>
               </div>
             </div>
+            {isMobile && mobileSidebarOpen && (
+              <button
+                type="button"
+                className="mobile-nav-close"
+                onClick={() => setMobileSidebarOpen(false)}
+                aria-label="Close navigation"
+              >
+                ✕
+              </button>
+            )}
             <button
               type="button"
               className="sidebar-toggle"
@@ -468,6 +478,14 @@ export default function App() {
             <div>v0.4 · {isVietnamese ? 'Du lieu thoi gian thuc' : 'Live telemetry'}</div>
           </div>
         </Sidebar>
+
+        {mobileSidebarOpen && (
+          <div
+            className="mobile-backdrop"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
 
         <main className="main">
           <button
