@@ -64,7 +64,34 @@ export default function TrafficView() {
   useEffect(() => { liveRef.current = live; }, [live]);
 
   useEffect(() => {
-    if (!API_URL) return;
+    if (!API_URL) {
+      const now = Date.now();
+      const mockRaw = [
+        { event_id: 'tv-001', src_ip: '203.0.113.42', dest_ip: '192.0.2.10', dest_port: 22, proto: 'TCP', severity: 1, event_time: new Date(now - 45000).toISOString(), signature: 'ET SCAN Potential SSH Scan OUTBOUND', category: 'Attempted Information Leak', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-ssh-east', honeypot_os: 'linux' },
+        { event_id: 'tv-002', src_ip: '198.51.100.17', dest_ip: '192.0.2.10', dest_port: 443, proto: 'TCP', severity: 3, event_time: new Date(now - 120000).toISOString(), signature: 'ET POLICY TLS Suspicious SNI', category: 'Potentially Bad Traffic', country_name: 'Russia', flag: '🇷🇺', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-003', src_ip: '203.0.113.88', dest_ip: '192.0.2.11', dest_port: 3389, proto: 'TCP', severity: 1, event_time: new Date(now - 240000).toISOString(), signature: 'ET EXPLOIT MS RDP Brute Force Attempt', category: 'Web Application Attack', country_name: 'Brazil', flag: '🇧🇷', honeypot_name: 'honeypot-rdp-west', honeypot_os: 'windows' },
+        { event_id: 'tv-004', src_ip: '192.0.2.201', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 2, event_time: new Date(now - 360000).toISOString(), signature: 'ET SCAN Nmap Scripting Engine User-Agent', category: 'Detection of a Network Scan', country_name: 'Vietnam', flag: '🇻🇳', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-005', src_ip: '198.51.100.55', dest_ip: '192.0.2.12', dest_port: 23, proto: 'TCP', severity: 2, event_time: new Date(now - 600000).toISOString(), signature: 'ET SCAN Telnet BruteForce Login Attempt', category: 'Attempted Information Leak', country_name: 'India', flag: '🇮🇳', honeypot_name: 'honeypot-telnet-east', honeypot_os: 'linux' },
+        { event_id: 'tv-006', src_ip: '203.0.113.119', dest_ip: '192.0.2.10', dest_port: 8080, proto: 'TCP', severity: 1, event_time: new Date(now - 900000).toISOString(), signature: 'ET EXPLOIT Apache Struts Remote Code Execution', category: 'Web Application Attack', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-007', src_ip: '192.0.2.44', dest_ip: '192.0.2.11', dest_port: 22, proto: 'TCP', severity: 2, event_time: new Date(now - 1200000).toISOString(), signature: 'ET POLICY SSH Connection Brute Force', category: 'Attempted Information Leak', country_name: 'Germany', flag: '🇩🇪', honeypot_name: 'honeypot-ssh-west', honeypot_os: 'linux' },
+        { event_id: 'tv-008', src_ip: '203.0.113.200', dest_ip: '192.0.2.10', dest_port: 53, proto: 'UDP', severity: 3, event_time: new Date(now - 1500000).toISOString(), signature: 'ET POLICY DNS Query to .onion Proxy Domain', category: 'Potentially Bad Traffic', country_name: 'Russia', flag: '🇷🇺', honeypot_name: 'honeypot-dns-east', honeypot_os: 'linux' },
+        { event_id: 'tv-009', src_ip: '198.51.100.78', dest_ip: '192.0.2.12', dest_port: 443, proto: 'TCP', severity: 3, event_time: new Date(now - 1800000).toISOString(), signature: 'ET POLICY Outbound TLS Connection to Known C2', category: 'A Network Trojan was Detected', country_name: 'Brazil', flag: '🇧🇷', honeypot_name: 'honeypot-http-west', honeypot_os: 'linux' },
+        { event_id: 'tv-010', src_ip: '192.0.2.155', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 1, event_time: new Date(now - 2100000).toISOString(), signature: 'ET WEB_SERVER XSS Attempt via Cookie Header', category: 'Web Application Attack', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-011', src_ip: '203.0.113.33', dest_ip: '192.0.2.11', dest_port: 22, proto: 'TCP', severity: 2, event_time: new Date(now - 2400000).toISOString(), signature: 'ET SCAN LibSSH Based SSH Scan', category: 'Detection of a Network Scan', country_name: 'India', flag: '🇮🇳', honeypot_name: 'honeypot-ssh-east', honeypot_os: 'linux' },
+        { event_id: 'tv-012', src_ip: '198.51.100.91', dest_ip: '192.0.2.10', dest_port: 8080, proto: 'TCP', severity: 2, event_time: new Date(now - 2700000).toISOString(), signature: 'ET POLICY Incoming Basic Auth Base64 HTTP', category: 'Attempted Information Leak', country_name: 'USA', flag: '🇺🇸', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-013', src_ip: '203.0.113.67', dest_ip: '192.0.2.12', dest_port: 53, proto: 'UDP', severity: 3, event_time: new Date(now - 3300000).toISOString(), signature: 'ET POLICY DNS Query to Suspicious TLD (.xyz)', category: 'Potentially Bad Traffic', country_name: 'Vietnam', flag: '🇻🇳', honeypot_name: 'honeypot-dns-east', honeypot_os: 'linux' },
+        { event_id: 'tv-014', src_ip: '192.0.2.88', dest_ip: '192.0.2.10', dest_port: 445, proto: 'TCP', severity: 1, event_time: new Date(now - 3900000).toISOString(), signature: 'ET EXPLOIT Possible EternalBlue MS17-010 Echo Response', category: 'Misc Attack', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-smb-east', honeypot_os: 'windows' },
+        { event_id: 'tv-015', src_ip: '198.51.100.222', dest_ip: '192.0.2.11', dest_port: 3306, proto: 'TCP', severity: 2, event_time: new Date(now - 4500000).toISOString(), signature: 'ET SCAN MySQL Login Brute Force Attempt', category: 'Attempted Information Leak', country_name: 'Germany', flag: '🇩🇪', honeypot_name: 'honeypot-db-west', honeypot_os: 'linux' },
+        { event_id: 'tv-016', src_ip: '203.0.113.150', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 2, event_time: new Date(now - 5100000).toISOString(), signature: 'ET WEB_SERVER PHP Remote File Inclusion', category: 'Web Application Attack', country_name: 'Russia', flag: '🇷🇺', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-017', src_ip: '192.0.2.30', dest_ip: '192.0.2.12', dest_port: 22, proto: 'TCP', severity: 3, event_time: new Date(now - 5700000).toISOString(), signature: 'ET POLICY SSH Banner Grab Attempt', category: 'Not Suspicious Traffic', country_name: 'USA', flag: '🇺🇸', honeypot_name: 'honeypot-ssh-west', honeypot_os: 'linux' },
+        { event_id: 'tv-018', src_ip: '203.0.113.77', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 1, event_time: new Date(now - 6300000).toISOString(), signature: 'ET EXPLOIT Possible SQL Injection Attempt SELECT FROM', category: 'Web Application Attack', country_name: 'Brazil', flag: '🇧🇷', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-019', src_ip: '198.51.100.133', dest_ip: '192.0.2.11', dest_port: 443, proto: 'TCP', severity: 3, event_time: new Date(now - 6600000).toISOString(), signature: 'ET POLICY Observed Let\'s Encrypt Certificate for Suspicious TLD', category: 'Potentially Bad Traffic', country_name: 'India', flag: '🇮🇳', honeypot_name: 'honeypot-http-west', honeypot_os: 'linux' },
+        { event_id: 'tv-020', src_ip: '192.0.2.99', dest_ip: '192.0.2.10', dest_port: 0, proto: 'ICMP', severity: 3, event_time: new Date(now - 7200000).toISOString(), signature: 'ET SCAN ICMP Flood Outbound', category: 'Detection of a Denial of Service Attack', country_name: 'Vietnam', flag: '🇻🇳', honeypot_name: 'honeypot-ssh-east', honeypot_os: 'linux' },
+      ];
+      setEntries(mockRaw.map(normalizeRestEvent));
+      setWsStatus('demo');
+      return;
+    }
     (async () => {
       try {
         const res = await fetch(API_URL + '/events');
@@ -269,6 +296,7 @@ export default function TrafficView() {
     connecting: { color: '#f59e0b', label: 'Connecting...' },
     error:      { color: '#ef4444', label: 'Reconnecting...' },
     polling:    { color: '#06b6d4', label: 'Polling (15s)' },
+    demo:       { color: '#8b5cf6', label: 'Demo Mode' },
   };
   const wsInfo = statusConfig[wsStatus] || statusConfig.connecting;
 

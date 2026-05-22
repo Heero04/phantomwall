@@ -134,7 +134,25 @@ export default function S3LogExplorer() {
   /* ── Fetch logs ──────────────────────────────────────────── */
   const fetchLogs = useCallback(async (overrides = {}) => {
     if (!API_URL) {
-      setError('API URL is not configured. Set VITE_SURICATA_API_URL in .env')
+      const now = Date.now()
+      const mockItems = [
+        { timestamp: new Date(now - 60000).toISOString(), event_type: 'alert', src_ip: '203.0.113.42', src_port: 48912, dest_ip: '192.0.2.10', dest_port: 22, proto: 'TCP', alert_signature: 'ET SCAN Potential SSH Scan OUTBOUND', alert_severity: 1, alert_category: 'Attempted Information Leak', country_name: 'China', flag: '🇨🇳' },
+        { timestamp: new Date(now - 180000).toISOString(), event_type: 'alert', src_ip: '198.51.100.17', src_port: 52341, dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', alert_signature: 'ET WEB_SERVER SQL Injection SELECT FROM', alert_severity: 1, alert_category: 'Web Application Attack', country_name: 'Russia', flag: '🇷🇺' },
+        { timestamp: new Date(now - 300000).toISOString(), event_type: 'http', src_ip: '203.0.113.88', src_port: 61024, dest_ip: '192.0.2.11', dest_port: 8080, proto: 'TCP', alert_signature: '', alert_severity: null, alert_category: '', country_name: 'Brazil', flag: '🇧🇷' },
+        { timestamp: new Date(now - 420000).toISOString(), event_type: 'dns', src_ip: '192.0.2.201', src_port: 53214, dest_ip: '192.0.2.10', dest_port: 53, proto: 'UDP', alert_signature: '', alert_severity: null, alert_category: '', country_name: 'Vietnam', flag: '🇻🇳' },
+        { timestamp: new Date(now - 600000).toISOString(), event_type: 'alert', src_ip: '198.51.100.55', src_port: 44100, dest_ip: '192.0.2.12', dest_port: 23, proto: 'TCP', alert_signature: 'ET SCAN Telnet BruteForce Login Attempt', alert_severity: 2, alert_category: 'Attempted Information Leak', country_name: 'India', flag: '🇮🇳' },
+        { timestamp: new Date(now - 900000).toISOString(), event_type: 'tls', src_ip: '203.0.113.119', src_port: 55123, dest_ip: '192.0.2.10', dest_port: 443, proto: 'TCP', alert_signature: '', alert_severity: null, alert_category: '', country_name: 'Germany', flag: '🇩🇪' },
+        { timestamp: new Date(now - 1200000).toISOString(), event_type: 'alert', src_ip: '192.0.2.44', src_port: 38442, dest_ip: '192.0.2.11', dest_port: 3389, proto: 'TCP', alert_signature: 'ET EXPLOIT MS RDP Brute Force Attempt', alert_severity: 1, alert_category: 'Misc Attack', country_name: 'China', flag: '🇨🇳' },
+        { timestamp: new Date(now - 1500000).toISOString(), event_type: 'flow', src_ip: '203.0.113.200', src_port: 49876, dest_ip: '192.0.2.10', dest_port: 22, proto: 'TCP', alert_signature: '', alert_severity: null, alert_category: '', country_name: 'Russia', flag: '🇷🇺' },
+        { timestamp: new Date(now - 1800000).toISOString(), event_type: 'alert', src_ip: '198.51.100.78', src_port: 60122, dest_ip: '192.0.2.12', dest_port: 445, proto: 'TCP', alert_signature: 'ET EXPLOIT Possible EternalBlue MS17-010', alert_severity: 1, alert_category: 'Misc Attack', country_name: 'Brazil', flag: '🇧🇷' },
+        { timestamp: new Date(now - 2100000).toISOString(), event_type: 'http', src_ip: '192.0.2.155', src_port: 51222, dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', alert_signature: '', alert_severity: null, alert_category: '', country_name: 'USA', flag: '🇺🇸' },
+        { timestamp: new Date(now - 2700000).toISOString(), event_type: 'alert', src_ip: '203.0.113.33', src_port: 47890, dest_ip: '192.0.2.11', dest_port: 3306, proto: 'TCP', alert_signature: 'ET SCAN MySQL Login Brute Force Attempt', alert_severity: 2, alert_category: 'Attempted Information Leak', country_name: 'India', flag: '🇮🇳' },
+        { timestamp: new Date(now - 3300000).toISOString(), event_type: 'dns', src_ip: '198.51.100.91', src_port: 41982, dest_ip: '192.0.2.10', dest_port: 53, proto: 'UDP', alert_signature: '', alert_severity: null, alert_category: '', country_name: 'Germany', flag: '🇩🇪' },
+        { timestamp: new Date(now - 3900000).toISOString(), event_type: 'alert', src_ip: '203.0.113.67', src_port: 55781, dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', alert_signature: 'ET WEB_SERVER PHP Remote File Inclusion', alert_severity: 2, alert_category: 'Web Application Attack', country_name: 'Vietnam', flag: '🇻🇳' },
+      ]
+      setLogs({ count: mockItems.length, items: mockItems, data_scanned_mb: 12.4 })
+      setQueryTime('1.83')
+      setQueryHistory([{ id: Date.now(), date, eventType: eventType || 'all', srcIp: srcIp || '*', resultCount: mockItems.length, scannedMb: 12.4, timestamp: new Date().toISOString() }])
       return
     }
     setLoading(true)
@@ -173,7 +191,20 @@ export default function S3LogExplorer() {
 
   /* ── Fetch summary ───────────────────────────────────────── */
   const fetchSummary = useCallback(async (dateOverride = null) => {
-    if (!API_URL) return
+    if (!API_URL) {
+      setSummary({
+        items: [
+          { event_type: 'alert', event_count: 847 },
+          { event_type: 'flow', event_count: 12340 },
+          { event_type: 'http', event_count: 3201 },
+          { event_type: 'dns', event_count: 2890 },
+          { event_type: 'tls', event_count: 1456 },
+          { event_type: 'tcp', event_count: 987 },
+        ],
+        data_scanned_mb: 48.2,
+      })
+      return
+    }
     try {
       const selectedDate = dateOverride || date
       const response = await fetch(`${API_URL}/logs?action=summary&date=${selectedDate}`)
@@ -184,6 +215,13 @@ export default function S3LogExplorer() {
       // Summary is optional
     }
   }, [date])
+
+  useEffect(() => {
+    if (!API_URL) {
+      fetchLogs()
+      fetchSummary()
+    }
+  }, [])
 
   /* ── Handlers ────────────────────────────────────────────── */
   const handleSearch = async (e) => {

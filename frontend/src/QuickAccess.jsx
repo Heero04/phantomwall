@@ -22,7 +22,29 @@ const QuickAccess = ({ onNavigate }) => {
   const fetchData = async () => {
     try {
       if (!API_URL) {
-        console.warn('API URL not configured');
+        const now = Date.now();
+        setAlerts([
+          { event_id: 'evt-001', signature: 'ET SCAN Potential SSH Scan OUTBOUND', category: 'Attempted Information Leak', src_ip: '203.0.113.42', severity: 1, event_time: new Date(now - 180000).toISOString(), country_name: 'China', flag: '🇨🇳' },
+          { event_id: 'evt-002', signature: 'ET POLICY SSH Connection to Non-Standard Port', category: 'Potentially Bad Traffic', src_ip: '198.51.100.17', severity: 2, event_time: new Date(now - 420000).toISOString(), country_name: 'Russia', flag: '🇷🇺' },
+          { event_id: 'evt-003', signature: 'ET EXPLOIT Possible SQL Injection Attempt', category: 'Web Application Attack', src_ip: '203.0.113.88', severity: 1, event_time: new Date(now - 900000).toISOString(), country_name: 'Brazil', flag: '🇧🇷' },
+          { event_id: 'evt-004', signature: 'ET SCAN Nmap Scripting Engine User-Agent Detected', category: 'Detection of a Network Scan', src_ip: '192.0.2.201', severity: 2, event_time: new Date(now - 1500000).toISOString(), country_name: 'Vietnam', flag: '🇻🇳' },
+          { event_id: 'evt-005', signature: 'ET POLICY Incoming Basic Auth Base64 HTTP Password', category: 'Attempted Information Leak', src_ip: '198.51.100.55', severity: 2, event_time: new Date(now - 2100000).toISOString(), country_name: 'India', flag: '🇮🇳' },
+          { event_id: 'evt-006', signature: 'ET EXPLOIT Apache Struts Remote Code Execution', category: 'Web Application Attack', src_ip: '203.0.113.119', severity: 1, event_time: new Date(now - 2700000).toISOString(), country_name: 'China', flag: '🇨🇳' },
+          { event_id: 'evt-007', signature: 'ET SCAN Telnet BruteForce Login Attempt', category: 'Attempted Information Leak', src_ip: '192.0.2.44', severity: 2, event_time: new Date(now - 3600000).toISOString(), country_name: 'Germany', flag: '🇩🇪' },
+          { event_id: 'evt-008', signature: 'ET POLICY DNS Query to Suspicious TLD (.xyz)', category: 'Potentially Bad Traffic', src_ip: '203.0.113.200', severity: 3, event_time: new Date(now - 4200000).toISOString(), country_name: 'Russia', flag: '🇷🇺' },
+          { event_id: 'evt-009', signature: 'ET SCAN Potential VNC Scan 5900-5920', category: 'Detection of a Network Scan', src_ip: '198.51.100.78', severity: 2, event_time: new Date(now - 5400000).toISOString(), country_name: 'Brazil', flag: '🇧🇷' },
+          { event_id: 'evt-010', signature: 'ET WEB_SERVER XSS Attempt via Cookie', category: 'Web Application Attack', src_ip: '192.0.2.155', severity: 1, event_time: new Date(now - 6000000).toISOString(), country_name: 'China', flag: '🇨🇳' },
+        ]);
+        setMetrics({ metrics: { total_events: 14892, critical: 23, high: 147, medium: 892, low: 13830, events_24h: 1247 } });
+        setFleetInstances([
+          { instance_id: 'i-0a1b2c3d4e5f60001', status: 'running', region: 'us-east-1', last_seen: new Date(now - 86400000).toISOString() },
+          { instance_id: 'i-0a1b2c3d4e5f60002', status: 'running', region: 'us-east-1', last_seen: new Date(now - 172800000).toISOString() },
+          { instance_id: 'i-0a1b2c3d4e5f60003', status: 'running', region: 'us-west-2', last_seen: new Date(now - 259200000).toISOString() },
+          { instance_id: 'i-0a1b2c3d4e5f60004', status: 'running', region: 'eu-west-1', last_seen: new Date(now - 43200000).toISOString() },
+          { instance_id: 'i-0a1b2c3d4e5f60005', status: 'stopped', region: 'ap-southeast-1', last_seen: new Date(now - 604800000).toISOString() },
+        ]);
+        setHoneypotStatus('running');
+        setLoading(false);
         return;
       }
 
