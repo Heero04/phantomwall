@@ -84,7 +84,8 @@ function KpiPill({ icon, label, value, accent = '#06b6d4' }) {
 /* ═══════════════════════════════════════════════════════════════
    Main Component
    ═══════════════════════════════════════════════════════════════ */
-export default function S3LogExplorer() {
+export default function S3LogExplorer({ language = 'en' }) {
+  const isVietnamese = language === 'vi'
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [eventType, setEventType] = useState('')
   const [srcIp, setSrcIp] = useState('')
@@ -301,11 +302,12 @@ export default function S3LogExplorer() {
       {/* ── Hero ──────────────────────────────────────────────── */}
       <header className="s3x__hero">
         <div className="s3x__hero-text">
-          <p className="s3x__eyebrow">Athena · S3 · Suricata</p>
-          <h2>S3 Log Explorer</h2>
+          <p className="s3x__eyebrow">{isVietnamese ? 'Athena · S3 · Suricata' : 'Athena · S3 · Suricata'}</p>
+          <h2>{isVietnamese ? 'Trinh kham pha Log S3' : 'S3 Log Explorer'}</h2>
           <p className="s3x__hero-sub">
-            Query full Suricata event logs stored in S3 via Athena.
-            Separate from the DynamoDB alert stream — this is your deep-dive forensics layer.
+            {isVietnamese
+              ? 'Truy van day du nhat ky su kien Suricata luu trong S3 qua Athena. Tach biet voi luong canh bao DynamoDB — day la lop dieu tra chuyen sau cua ban.'
+              : 'Query full Suricata event logs stored in S3 via Athena. Separate from the DynamoDB alert stream — this is your deep-dive forensics layer.'}
           </p>
         </div>
 
@@ -327,7 +329,7 @@ export default function S3LogExplorer() {
             className="s3x__history-toggle"
             onClick={() => setShowHistory(!showHistory)}
           >
-            🕘 Query History ({queryHistory.length})
+            {isVietnamese ? `🕘 Lich su truy van (${queryHistory.length})` : `🕘 Query History (${queryHistory.length})`}
             <span className="s3x__chevron">{showHistory ? '▲' : '▼'}</span>
           </button>
 
@@ -338,14 +340,14 @@ export default function S3LogExplorer() {
                   key={entry.id}
                   className="s3x__history-item"
                   onClick={() => handleReplay(entry)}
-                  title="Click to replay this query"
+                  title={isVietnamese ? 'Bam de chay lai truy van nay' : 'Click to replay this query'}
                 >
                   <span className="s3x__history-date">{entry.date}</span>
                   <span className="s3x__history-type" style={{ color: EVENT_TYPE_COLORS[entry.eventType] || '#94a3b8' }}>
                     {EVENT_TYPE_ICONS[entry.eventType] || '📋'} {entry.eventType}
                   </span>
                   <span className="s3x__history-src">{entry.srcIp}</span>
-                  <span className="s3x__history-count">{entry.resultCount} rows</span>
+                  <span className="s3x__history-count">{entry.resultCount} {isVietnamese ? 'dong' : 'rows'}</span>
                   <span className="s3x__history-ago">{ago(entry.timestamp)}</span>
                 </button>
               ))}
@@ -358,27 +360,27 @@ export default function S3LogExplorer() {
       <form className="s3x__filters" onSubmit={handleSearch} ref={formRef}>
         <div className="s3x__filter-row">
           <label>
-            <span>Date</span>
+            <span>{isVietnamese ? 'Ngay' : 'Date'}</span>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </label>
           <label>
-            <span>Event Type</span>
+            <span>{isVietnamese ? 'Loai su kien' : 'Event Type'}</span>
             <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-              <option value="">All types</option>
+              <option value="">{isVietnamese ? 'Tat ca loai' : 'All types'}</option>
               {Object.keys(EVENT_TYPE_COLORS).map((t) => (
                 <option key={t} value={t}>{EVENT_TYPE_ICONS[t] || ''} {t.charAt(0).toUpperCase() + t.slice(1)}</option>
               ))}
             </select>
           </label>
           <label>
-            <span>Protocol</span>
+            <span>{isVietnamese ? 'Giao thuc' : 'Protocol'}</span>
             <select value={proto} onChange={(e) => setProto(e.target.value)}>
-              <option value="">All</option>
+              <option value="">{isVietnamese ? 'Tat ca' : 'All'}</option>
               {PROTOCOLS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </label>
           <label>
-            <span>Limit</span>
+            <span>{isVietnamese ? 'Gioi han' : 'Limit'}</span>
             <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
               {LIMITS.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
@@ -387,19 +389,19 @@ export default function S3LogExplorer() {
 
         <div className="s3x__filter-row s3x__filter-row--secondary">
           <label>
-            <span>Source IP</span>
+            <span>{isVietnamese ? 'IP nguon' : 'Source IP'}</span>
             <input type="text" placeholder="e.g. 203.0.113.42" value={srcIp} onChange={(e) => setSrcIp(e.target.value)} />
           </label>
           <label>
-            <span>Destination IP</span>
+            <span>{isVietnamese ? 'IP dich' : 'Destination IP'}</span>
             <input type="text" placeholder="e.g. 198.51.100.7" value={destIp} onChange={(e) => setDestIp(e.target.value)} />
           </label>
           <div className="s3x__filter-actions">
             <button type="submit" className="s3x__search-btn" disabled={loading}>
               {loading ? (
-                <><span className="s3x__spinner" /> Querying Athena...</>
+                <><span className="s3x__spinner" /> {isVietnamese ? 'Dang truy van Athena...' : 'Querying Athena...'}</>
               ) : (
-                <>🔍 Search S3 Logs</>
+                <>{isVietnamese ? '🔍 Tim log S3' : '🔍 Search S3 Logs'}</>
               )}
             </button>
             <button
@@ -407,9 +409,9 @@ export default function S3LogExplorer() {
               className="s3x__clear-btn"
               onClick={handleClearFilters}
               disabled={loading}
-              title="Reset query filters to defaults"
+              title={isVietnamese ? 'Dat lai bo loc truy van ve mac dinh' : 'Reset query filters to defaults'}
             >
-              Reset Filters
+              {isVietnamese ? 'Dat lai bo loc' : 'Reset Filters'}
             </button>
             <kbd className="s3x__kbd">Ctrl + Enter</kbd>
           </div>
@@ -420,7 +422,7 @@ export default function S3LogExplorer() {
       {summary?.items?.length > 0 && (
         <section className="s3x__summary">
           <div className="s3x__summary-header">
-            <h3>Event Breakdown — {date}</h3>
+            <h3>{isVietnamese ? `Phan ra su kien — ${date}` : `Event Breakdown — ${date}`}</h3>
             {summary.data_scanned_mb !== undefined && (
               <span className="s3x__scan-badge">
                 💾 {summary.data_scanned_mb} MB scanned · {formatScanCost(summary.data_scanned_mb)}
@@ -454,7 +456,7 @@ export default function S3LogExplorer() {
         <div className="s3x__error">
           <span className="s3x__error-icon">⚠️</span>
           <div>
-            <strong>Query Error</strong>
+            <strong>{isVietnamese ? 'Loi truy van' : 'Query Error'}</strong>
             <p>{error}</p>
           </div>
         </div>

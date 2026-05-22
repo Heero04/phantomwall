@@ -184,7 +184,8 @@ const Section = ({ id, title, icon, badge, children, defaultOpen = true }) => {
 /* ═══════════════════════════════════════════════════════════════
    Main Component
    ═══════════════════════════════════════════════════════════════ */
-export default function CloudPosture() {
+export default function CloudPosture({ language = 'en' }) {
+  const isVietnamese = language === 'vi'
   const [lambdaHealth, setLambdaHealth] = useState({})
   const [liveCost, setLiveCost] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -317,15 +318,17 @@ export default function CloudPosture() {
       {/* ── Hero ──────────────────────────────────────────── */}
       <section className="posture__hero">
         <div className="posture__hero-text">
-          <p className="posture__eyebrow">PhantomWall / Cloud Posture & Settings</p>
-          <h2>🛡️ Cloud Posture & Settings</h2>
+          <p className="posture__eyebrow">{isVietnamese ? 'PhantomWall / Tu the dam may & Cai dat' : 'PhantomWall / Cloud Posture & Settings'}</p>
+          <h2>{isVietnamese ? '🛡️ Tu the dam may & Cai dat' : '🛡️ Cloud Posture & Settings'}</h2>
           <p className="posture__hero-sub">
-            Infrastructure health, security compliance, IAM audit, cost tracking, and environment configuration — the back-of-the-house view that proves the system is secure.
+            {isVietnamese
+              ? 'Suc khoe ha tang, tuan thu bao mat, kiem toan IAM, theo doi chi phi va cau hinh moi truong — goc nhin hau truong chung minh he thong an toan.'
+              : 'Infrastructure health, security compliance, IAM audit, cost tracking, and environment configuration — the back-of-the-house view that proves the system is secure.'}
           </p>
         </div>
         <div className="posture__hero-actions">
           <button className="posture__scan-btn" onClick={runScan} disabled={loading}>
-            {loading ? '⏳ Scanning…' : '🔄 Run Security Scan'}
+            {loading ? (isVietnamese ? '⏳ Dang quet…' : '⏳ Scanning…') : (isVietnamese ? '🔄 Chay quet bao mat' : '🔄 Run Security Scan')}
           </button>
           {lastScan && (
             <span className="posture__last-scan">Last scan: {lastScan.toLocaleTimeString()}</span>

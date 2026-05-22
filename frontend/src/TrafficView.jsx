@@ -44,7 +44,8 @@ const normalizeRestEvent = (raw) => ({
   ].filter(Boolean).join('\n') || 'No additional detail',
 });
 
-export default function TrafficView() {
+export default function TrafficView({ language = 'en' }) {
+  const isVietnamese = language === 'vi';
   const [entries, setEntries]                 = useState([]);
   const [live, setLive]                       = useState(true);
   const [query, setQuery]                     = useState('');
@@ -292,11 +293,11 @@ export default function TrafficView() {
   };
 
   const statusConfig = {
-    connected:  { color: '#10b981', label: 'Live Stream' },
-    connecting: { color: '#f59e0b', label: 'Connecting...' },
-    error:      { color: '#ef4444', label: 'Reconnecting...' },
-    polling:    { color: '#06b6d4', label: 'Polling (15s)' },
-    demo:       { color: '#8b5cf6', label: 'Demo Mode' },
+    connected:  { color: '#10b981', label: isVietnamese ? 'Luong truc tiep' : 'Live Stream' },
+    connecting: { color: '#f59e0b', label: isVietnamese ? 'Dang ket noi...' : 'Connecting...' },
+    error:      { color: '#ef4444', label: isVietnamese ? 'Dang ket noi lai...' : 'Reconnecting...' },
+    polling:    { color: '#06b6d4', label: isVietnamese ? 'Polling (15s)' : 'Polling (15s)' },
+    demo:       { color: '#8b5cf6', label: isVietnamese ? 'Che do Demo' : 'Demo Mode' },
   };
   const wsInfo = statusConfig[wsStatus] || statusConfig.connecting;
 
@@ -305,16 +306,20 @@ export default function TrafficView() {
       <div className="traffic__shell">
         <section className="traffic__hero">
           <div className="traffic__hero-text">
-            <p className="traffic__eyebrow">Network Telemetry</p>
-            <h2>Traffic Ledger</h2>
-            <p className="traffic__hero-sub">Real-time Suricata alert stream from your honeypot fleet &mdash; inspect packets, filter by protocol, and trigger response actions.</p>
+            <p className="traffic__eyebrow">{isVietnamese ? 'Giam sat mang' : 'Network Telemetry'}</p>
+            <h2>{isVietnamese ? 'Nhat ky luu luong' : 'Traffic Ledger'}</h2>
+            <p className="traffic__hero-sub">
+              {isVietnamese
+                ? 'Luong canh bao Suricata theo thoi gian thuc tu fleet honeypot — kiem tra goi tin, loc theo giao thuc va kich hoat phan ung.'
+                : 'Real-time Suricata alert stream from your honeypot fleet &mdash; inspect packets, filter by protocol, and trigger response actions.'}
+            </p>
           </div>
           <div className="traffic__hero-actions">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.6rem', borderRadius: '0.5rem', border: '1px solid ' + wsInfo.color + '33', background: wsInfo.color + '11', fontSize: '0.72rem', color: wsInfo.color, fontWeight: 600 }}>
               {wsInfo.label}
             </div>
             <button onClick={() => setLive((v) => !v)} className={'traffic__live-btn ' + (live ? 'traffic__live-btn--active' : 'traffic__live-btn--paused')}>
-              {live ? 'Live' : 'Paused'}
+              {live ? (isVietnamese ? 'Truc tiep' : 'Live') : (isVietnamese ? 'Tam dung' : 'Paused')}
             </button>
           </div>
         </section>
@@ -332,7 +337,7 @@ export default function TrafficView() {
 
         <div className="traffic__panel">
           <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
-            <input type="search" placeholder="Filter by IP, protocol, action, signature, country..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ flex: '1 1 320px', background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(100, 116, 139, 0.5)', borderRadius: '0.5rem', color: '#e2e8f0', padding: '0.55rem 0.7rem' }} />
+            <input type="search" placeholder={isVietnamese ? 'Loc theo IP, giao thuc, hanh dong, chu ky, quoc gia...' : 'Filter by IP, protocol, action, signature, country...'} value={query} onChange={(e) => setQuery(e.target.value)} style={{ flex: '1 1 320px', background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(100, 116, 139, 0.5)', borderRadius: '0.5rem', color: '#e2e8f0', padding: '0.55rem 0.7rem' }} />
             {['TCP', 'UDP', 'HTTP', 'TLS', 'ICMP'].map((p) => {
               const active = activeProtocols.has(p);
               return (<button key={p} onClick={() => toggleProtocol(p)} style={{ border: active ? '1px solid rgba(34, 211, 238, 0.45)' : '1px solid rgba(100, 116, 139, 0.35)', background: active ? 'rgba(34, 211, 238, 0.12)' : 'rgba(15, 23, 42, 0.45)', color: active ? '#67e8f9' : '#cbd5e1', borderRadius: '0.45rem', padding: '0.42rem 0.55rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>{p}</button>);
@@ -343,7 +348,7 @@ export default function TrafficView() {
             {filteredEntries.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#128225;</div>
-                <div style={{ fontSize: '0.9rem' }}>{entries.length === 0 ? 'Waiting for live traffic - events will appear as your honeypots detect activity.' : 'No events match your current filter.'}</div>
+                <div style={{ fontSize: '0.9rem' }}>{entries.length === 0 ? (isVietnamese ? 'Dang cho luu luong truc tiep - su kien se hien thi khi honeypot phat hien hoat dong.' : 'Waiting for live traffic - events will appear as your honeypots detect activity.') : (isVietnamese ? 'Khong co su kien nao khop voi bo loc hien tai.' : 'No events match your current filter.')}</div>
               </div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.55rem', minWidth: '860px' }}>

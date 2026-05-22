@@ -152,7 +152,8 @@ const ChartTooltip = ({ active, payload, label }) => {
 /* ═══════════════════════════════════════════════════════════════
    Main Component
    ═══════════════════════════════════════════════════════════════ */
-export default function IntelAnalytics() {
+export default function IntelAnalytics({ language = 'en' }) {
+  const isVietnamese = language === 'vi'
   const [alerts, setAlerts] = useState([])
   const [metrics, setMetrics] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -428,10 +429,12 @@ export default function IntelAnalytics() {
       {/* ── Hero ──────────────────────────────────────────── */}
       <section className="intel__hero">
         <div className="intel__hero-text">
-          <p className="intel__eyebrow">PhantomWall / Intel & Analytics</p>
-          <h2>🌐 Threat Intelligence</h2>
+          <p className="intel__eyebrow">{isVietnamese ? 'PhantomWall / Tinh bao & Phan tich' : 'PhantomWall / Intel & Analytics'}</p>
+          <h2>{isVietnamese ? '🌐 Tinh bao de doa' : '🌐 Threat Intelligence'}</h2>
           <p className="intel__hero-sub">
-            Strategic view of attack patterns, geographic origins, and long-term threat trends across your honeypot fleet.
+            {isVietnamese
+              ? 'Goc nhin chien luoc ve mau tan cong, nguon goc dia ly va xu huong de doa dai han tren fleet honeypot cua ban.'
+              : 'Strategic view of attack patterns, geographic origins, and long-term threat trends across your honeypot fleet.'}
           </p>
         </div>
         <div className="intel__hero-actions">
@@ -443,13 +446,13 @@ export default function IntelAnalytics() {
           )}
           <RangeToggle range={range} setRange={setRange} />
           <div className="intel__refresh-row">
-            <button className="intel__refresh-btn" onClick={() => { fetchData(); setCountdown(refreshInterval) }} title="Refresh now">
+            <button className="intel__refresh-btn" onClick={() => { fetchData(); setCountdown(refreshInterval) }} title={isVietnamese ? 'Lam moi ngay' : 'Refresh now'}>
               ↻
             </button>
             <span className="intel__refresh-cd">{countdown}s</span>
             {lastUpdated && (
               <span className="intel__last-updated">
-                Updated {lastUpdated.toLocaleTimeString()}
+                {isVietnamese ? 'Cap nhat' : 'Updated'} {lastUpdated.toLocaleTimeString()}
               </span>
             )}
           </div>
@@ -459,11 +462,11 @@ export default function IntelAnalytics() {
       {/* ── KPI Strip ─────────────────────────────────────── */}
       {analytics && (
         <div className="intel__kpis">
-          <KpiCard icon="📊" value={analytics.total.toLocaleString()} label="Total Events" accent="#06b6d4" trend={analytics.trendPct} />
-          <KpiCard icon="🚨" value={analytics.alertCount.toLocaleString()} label="Alerts" accent="#ef4444" />
-          <KpiCard icon="🌍" value={analytics.countries} label="Countries" accent="#8b5cf6" />
-          <KpiCard icon="🎯" value={(liveMetrics?.unique_ips_24h ?? analytics.uniqueIPs).toLocaleString()} label="Unique IPs (24h)" accent="#f59e0b" />
-          <KpiCard icon="📡" value={liveMetrics?.events_per_minute ?? '—'} label="Events / Min (Live)" accent="#10b981" />
+          <KpiCard icon="📊" value={analytics.total.toLocaleString()} label={isVietnamese ? 'Tong su kien' : 'Total Events'} accent="#06b6d4" trend={analytics.trendPct} />
+          <KpiCard icon="🚨" value={analytics.alertCount.toLocaleString()} label={isVietnamese ? 'Canh bao' : 'Alerts'} accent="#ef4444" />
+          <KpiCard icon="🌍" value={analytics.countries} label={isVietnamese ? 'Quoc gia' : 'Countries'} accent="#8b5cf6" />
+          <KpiCard icon="🎯" value={(liveMetrics?.unique_ips_24h ?? analytics.uniqueIPs).toLocaleString()} label={isVietnamese ? 'IP duy nhat (24h)' : 'Unique IPs (24h)'} accent="#f59e0b" />
+          <KpiCard icon="📡" value={liveMetrics?.events_per_minute ?? '—'} label={isVietnamese ? 'Su kien / Phut (Live)' : 'Events / Min (Live)'} accent="#10b981" />
         </div>
       )}
 
@@ -471,15 +474,15 @@ export default function IntelAnalytics() {
       {error && (
         <div className="intel__error">
           <span className="intel__error-icon">⚠️</span>
-          <div><strong>Connection Error</strong><p>{error}</p></div>
+          <div><strong>{isVietnamese ? 'Loi ket noi' : 'Connection Error'}</strong><p>{error}</p></div>
         </div>
       )}
 
       {loading && (
         <div className="intel__loading">
           <div className="intel__loading-spinner" />
-          <p>Aggregating threat intelligence…</p>
-          <p className="intel__loading-hint">Querying events & metrics</p>
+          <p>{isVietnamese ? 'Dang tong hop tinh bao de doa…' : 'Aggregating threat intelligence…'}</p>
+          <p className="intel__loading-hint">{isVietnamese ? 'Dang truy van su kien va chi so' : 'Querying events & metrics'}</p>
         </div>
       )}
 
@@ -491,9 +494,9 @@ export default function IntelAnalytics() {
             {/* Attack Map */}
             <section className="intel__card intel__card--map">
               <div className="intel__card-header">
-                <h3>🗺️ Global Attack Map</h3>
+                <h3>{isVietnamese ? '🗺️ Ban do tan cong toan cau' : '🗺️ Global Attack Map'}</h3>
                 <span className="intel__card-badge intel__card-badge--live">
-                  <span className="intel__live-dot" /> LIVE — {analytics.markers.length} origins
+                  <span className="intel__live-dot" /> {isVietnamese ? 'TRUC TIEP' : 'LIVE'} — {analytics.markers.length} {isVietnamese ? 'nguon' : 'origins'}
                 </span>
               </div>
               <div className="intel__map-wrap">
@@ -568,7 +571,7 @@ export default function IntelAnalytics() {
             {/* Top Origins Sidebar */}
             <section className="intel__card intel__card--origins">
               <div className="intel__card-header">
-                <h3>🏴 Top Attack Origins</h3>
+                <h3>{isVietnamese ? '🏴 Nguon tan cong hang dau' : '🏴 Top Attack Origins'}</h3>
               </div>
               <div className="intel__origins-list">
                 {analytics.topCountries.map((c, i) => {
@@ -601,9 +604,9 @@ export default function IntelAnalytics() {
           {/* Row 2: Trend Chart */}
           <section className="intel__card">
             <div className="intel__card-header">
-              <h3>📈 Threat Trend — {RANGE_OPTIONS.find(r => r.key === range)?.label}</h3>
+              <h3>{isVietnamese ? '📈 Xu huong de doa' : '📈 Threat Trend'} — {RANGE_OPTIONS.find(r => r.key === range)?.label}</h3>
               <span className="intel__card-badge">
-                {analytics.trend.reduce((s, d) => s + d.total, 0).toLocaleString()} events
+                {analytics.trend.reduce((s, d) => s + d.total, 0).toLocaleString()} {isVietnamese ? 'su kien' : 'events'}
               </span>
             </div>
             <div className="intel__chart-wrap" style={{ height: 260 }}>

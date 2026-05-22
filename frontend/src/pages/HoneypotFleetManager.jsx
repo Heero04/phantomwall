@@ -362,7 +362,8 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
 /* ═══════════════════════════════════════════════════════════════
    Main Component
    ═══════════════════════════════════════════════════════════════ */
-export default function HoneypotFleetManager() {
+export default function HoneypotFleetManager({ language = 'en' }) {
+  const isVietnamese = language === 'vi'
   const NOT_IMPLEMENTED_TRAP_PROFILES = new Set(['rdp', 'dns', 'ftp'])
   const isDemoMode = !API_URL
   const [fleet, setFleet] = useState([])
@@ -676,21 +677,22 @@ export default function HoneypotFleetManager() {
       {/* ── Hero with Ring + Stats ────────────────────────────── */}
       <header className="fleet__hero">
         <div className="fleet__hero-left">
-          <p className="fleet__eyebrow">Fleet Operations Console</p>
-          <h2>Honeypot Fleet Manager</h2>
+          <p className="fleet__eyebrow">{isVietnamese ? 'Bang dieu khien Fleet' : 'Fleet Operations Console'}</p>
+          <h2>{isVietnamese ? 'Quan ly Fleet Honeypot' : 'Honeypot Fleet Manager'}</h2>
           <p className="fleet__hero-sub">
-            Real-time management of distributed honeypot traps across AWS regions.
-            Monitor health checks, SSM agent status, and resource utilisation from a single pane.
+            {isVietnamese
+              ? 'Quan ly thoi gian thuc cac bay honeypot phan tan tren cac vung AWS. Giam sat kiem tra suc khoe, trang thai SSM va su dung tai nguyen tu mot man hinh.'
+              : 'Real-time management of distributed honeypot traps across AWS regions. Monitor health checks, SSM agent status, and resource utilisation from a single pane.'}
           </p>
           <div className="fleet__hero-kpis">
             <div className="fleet__kpi fleet__kpi--green">
-              <strong>{fleetSummary.running}</strong><span>Running</span>
+              <strong>{fleetSummary.running}</strong><span>{isVietnamese ? 'Dang chay' : 'Running'}</span>
             </div>
             <div className="fleet__kpi fleet__kpi--red">
-              <strong>{fleetSummary.stopped}</strong><span>Stopped</span>
+              <strong>{fleetSummary.stopped}</strong><span>{isVietnamese ? 'Da dung' : 'Stopped'}</span>
             </div>
             <div className="fleet__kpi fleet__kpi--amber">
-              <strong>{fleetSummary.pending}</strong><span>Pending</span>
+              <strong>{fleetSummary.pending}</strong><span>{isVietnamese ? 'Dang cho' : 'Pending'}</span>
             </div>
             <div className="fleet__kpi fleet__kpi--cyan">
               <strong>{fleetSummary.ssmOnline}</strong><span>SSM Online</span>

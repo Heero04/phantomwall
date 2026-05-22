@@ -3,7 +3,8 @@ import './components/AlertsLedger.css';
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL;
 
-const AlertsLedger = () => {
+const AlertsLedger = ({ language = 'en' }) => {
+  const isVietnamese = language === 'vi';
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -506,16 +507,18 @@ const AlertsLedger = () => {
         {/* ── Hero ──────────────────────────────────────────── */}
         <section className="ledger__hero">
           <div className="ledger__hero-text">
-            <p className="ledger__eyebrow">🔔 Security Events</p>
-            <h2>📋 Alerts Ledger</h2>
+            <p className="ledger__eyebrow">{isVietnamese ? '🔔 Su kien bao mat' : '🔔 Security Events'}</p>
+            <h2>{isVietnamese ? '📋 Nhat ky canh bao' : '📋 Alerts Ledger'}</h2>
             <p className="ledger__hero-sub">
-              Real-time security alerts from your honeypot fleet — filter, search, and respond to threats as they emerge.
+              {isVietnamese
+                ? 'Canh bao bao mat theo thoi gian thuc tu fleet honeypot — loc, tim kiem va phan ung voi de doa ngay khi xuat hien.'
+                : 'Real-time security alerts from your honeypot fleet — filter, search, and respond to threats as they emerge.'}
             </p>
           </div>
           <div className="ledger__hero-actions">
             <span style={{ fontSize: '0.85rem', color: isRefreshing ? '#22d3ee' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isRefreshing ? '#22d3ee' : '#10b981', boxShadow: isRefreshing ? '0 0 8px rgba(34, 211, 238, 0.6)' : '0 0 8px rgba(16, 185, 129, 0.6)' }} />
-              {isRefreshing ? 'Syncing...' : 'Live'}
+              {isRefreshing ? (isVietnamese ? 'Dang dong bo...' : 'Syncing...') : (isVietnamese ? 'Truc tiep' : 'Live')}
             </span>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
               {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
@@ -526,9 +529,9 @@ const AlertsLedger = () => {
         <div style={{ display: 'grid', gap: '1.5rem' }}>
           <div className="ledger__stat-grid">
             {[
-              { label: 'Total Alerts', value: totalAlerts },
-              { label: 'High Severity', value: highSeverity },
-              { label: 'Unique Threat Actors', value: uniqueActors }
+              { label: isVietnamese ? 'Tong canh bao' : 'Total Alerts', value: totalAlerts },
+              { label: isVietnamese ? 'Muc do cao' : 'High Severity', value: highSeverity },
+              { label: isVietnamese ? 'Tac nhan de doa duy nhat' : 'Unique Threat Actors', value: uniqueActors }
             ].map((s) => (
               <div key={s.label} className="ledger__panel" style={{ padding: '1rem' }}>
                 <div style={{
@@ -608,12 +611,12 @@ const AlertsLedger = () => {
                   outline: 'none'
                 }}
               >
-                <option value="timestamp:desc">Newest first</option>
-                <option value="timestamp:asc">Oldest first</option>
-                <option value="severity:desc">Severity (High to Low)</option>
-                <option value="severity:asc">Severity (Low to High)</option>
-                <option value="sourceIp:asc">Source IP (A to Z)</option>
-                <option value="sourceIp:desc">Source IP (Z to A)</option>
+                <option value="timestamp:desc">{isVietnamese ? 'Moi nhat truoc' : 'Newest first'}</option>
+                <option value="timestamp:asc">{isVietnamese ? 'Cu nhat truoc' : 'Oldest first'}</option>
+                <option value="severity:desc">{isVietnamese ? 'Muc do (Cao den Thap)' : 'Severity (High to Low)'}</option>
+                <option value="severity:asc">{isVietnamese ? 'Muc do (Thap den Cao)' : 'Severity (Low to High)'}</option>
+                <option value="sourceIp:asc">{isVietnamese ? 'IP nguon (A den Z)' : 'Source IP (A to Z)'}</option>
+                <option value="sourceIp:desc">{isVietnamese ? 'IP nguon (Z den A)' : 'Source IP (Z to A)'}</option>
               </select>
             </div>
           </div>
@@ -623,7 +626,7 @@ const AlertsLedger = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 10px rgba(34, 211, 238, 0.8)' }} />
-                  Security Alert Ledger
+                  {isVietnamese ? 'So cai canh bao bao mat' : 'Security Alert Ledger'}
                 </h2>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   <input
@@ -631,7 +634,7 @@ const AlertsLedger = () => {
                     type="search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Global search (IP, threat, country)"
+                    placeholder={isVietnamese ? 'Tim kiem toan cuc (IP, de doa, quoc gia)' : 'Global search (IP, threat, country)'}
                     style={{
                       width: '280px',
                       maxWidth: '100%',
@@ -656,17 +659,17 @@ const AlertsLedger = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    Export CSV
+                    {isVietnamese ? 'Xuat CSV' : 'Export CSV'}
                   </button>
-                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{filteredAlerts.length} alerts</span>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{filteredAlerts.length} {isVietnamese ? 'canh bao' : 'alerts'}</span>
                   <span style={{ fontSize: '0.75rem', color: isRefreshing ? '#22d3ee' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: isRefreshing ? '#22d3ee' : '#10b981', boxShadow: isRefreshing ? '0 0 8px rgba(34, 211, 238, 0.6)' : '0 0 8px rgba(16, 185, 129, 0.6)' }} />
-                    {isRefreshing ? 'Syncing...' : 'Live'}
+                    {isRefreshing ? (isVietnamese ? 'Dang dong bo...' : 'Syncing...') : (isVietnamese ? 'Truc tiep' : 'Live')}
                   </span>
                   <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                    Last updated:{' '}
+                    {isVietnamese ? 'Cap nhat luc:' : 'Last updated:'}{' '}
                     <span style={{ fontFamily: '"JetBrains Mono", "Consolas", monospace', fontVariantNumeric: 'tabular-nums' }}>
-                      {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
+                      {lastUpdated ? lastUpdated.toLocaleTimeString() : (isVietnamese ? 'Chua co' : 'Never')}
                     </span>
                   </span>
                   <button
@@ -683,14 +686,14 @@ const AlertsLedger = () => {
                       cursor: isRefreshing ? 'not-allowed' : 'pointer'
                     }}
                   >
-                    Refresh
+                    {isVietnamese ? 'Lam moi' : 'Refresh'}
                   </button>
                 </div>
               </div>
 
               {filteredAlerts.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2.5rem 0.5rem' }}>
-                  <p style={{ margin: 0 }}>No alerts match your filters.</p>
+                  <p style={{ margin: 0 }}>{isVietnamese ? 'Khong co canh bao nao khop voi bo loc.' : 'No alerts match your filters.'}</p>
                 </div>
               ) : (
                 <div

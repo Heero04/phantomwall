@@ -3,7 +3,8 @@ import './components/QuickAccess.css';
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL;
 
-const QuickAccess = ({ onNavigate }) => {
+const QuickAccess = ({ onNavigate, language = 'en' }) => {
+  const isVietnamese = language === 'vi';
   const [honeypotStatus, setHoneypotStatus] = useState('unknown');
   const [isStarting, setIsStarting] = useState(false);
   const [alerts, setAlerts] = useState([]);
@@ -109,11 +110,13 @@ const QuickAccess = ({ onNavigate }) => {
   })();
 
   const getFleetStatusText = () => {
-    if (fleetData.total === 0) return 'Loading fleet...';
-    if (fleetData.sentiment === 'suspended') return 'All traps offline';
-    if (fleetData.active === fleetData.total) return 'All systems operational';
-    if (fleetData.active === 0) return 'Critical: All traps offline';
-    return `Degraded: ${fleetData.total - fleetData.active} trap(s) offline`;
+    if (fleetData.total === 0) return isVietnamese ? 'Dang tai du lieu fleet...' : 'Loading fleet...';
+    if (fleetData.sentiment === 'suspended') return isVietnamese ? 'Tat ca bay da offline' : 'All traps offline';
+    if (fleetData.active === fleetData.total) return isVietnamese ? 'Tat ca he thong hoat dong on dinh' : 'All systems operational';
+    if (fleetData.active === 0) return isVietnamese ? 'Nghiem trong: Tat ca bay da offline' : 'Critical: All traps offline';
+    return isVietnamese
+      ? `Suy giam: ${fleetData.total - fleetData.active} bay dang offline`
+      : `Degraded: ${fleetData.total - fleetData.active} trap(s) offline`;
   };
 
   const getFleetStatusColor = () => {
@@ -238,10 +241,12 @@ const QuickAccess = ({ onNavigate }) => {
         {/* ── Hero ──────────────────────────────────────────── */}
         <section className="qa__hero">
           <div className="qa__hero-text">
-            <p className="qa__eyebrow">⚡ Command Center</p>
-            <h2>🛡️ Quick Access</h2>
+            <p className="qa__eyebrow">{isVietnamese ? '⚡ Trung tam Dieu khien' : '⚡ Command Center'}</p>
+            <h2>{isVietnamese ? '🛡️ Truy cap nhanh' : '🛡️ Quick Access'}</h2>
             <p className="qa__hero-sub">
-              Real-time fleet status, threat metrics, and quick actions — your operational nerve center for PhantomWall.
+              {isVietnamese
+                ? 'Trang thai fleet theo thoi gian thuc, chi so de doa va thao tac nhanh — trung tam van hanh cua PhantomWall.'
+                : 'Real-time fleet status, threat metrics, and quick actions — your operational nerve center for PhantomWall.'}
             </p>
           </div>
           <div className="qa__hero-actions">
@@ -255,7 +260,9 @@ const QuickAccess = ({ onNavigate }) => {
                 }
               }}
             >
-              {lockdownActive ? '🔒 Lockdown' : '🔓 Lockdown'}
+              {lockdownActive
+                ? (isVietnamese ? '🔒 Khoa chat' : '🔒 Lockdown')
+                : (isVietnamese ? '🔓 Khoa chat' : '🔓 Lockdown')}
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{
@@ -263,7 +270,7 @@ const QuickAccess = ({ onNavigate }) => {
                 fontWeight: 700,
                 color: getFleetStatusColor(),
               }}>
-                {fleetData.active}/{fleetData.total} Active
+                {fleetData.active}/{fleetData.total} {isVietnamese ? 'Dang hoat dong' : 'Active'}
               </span>
               <button
                 onClick={handleToggleHoneypot}
