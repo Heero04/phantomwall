@@ -20,6 +20,18 @@ const SETTINGS_STORAGE_KEY = 'phantomwall_settings'
 const SETTINGS_SAVED_EVENT = 'phantomwall:settings-saved'
 const AUDIT_LOG_STORAGE_KEY = 'phantomwall_audit_log'
 const DEFAULT_SESSION_TIMEOUT_MIN = 60
+const LANGUAGE_STORAGE_KEY = 'phantomwall_language'
+
+const VI_NAV_LABELS = {
+  console: 'Trung tâm Điều khiển',
+  'traffic-view': 'Nhật ký Lưu lượng',
+  'alerts-ledger': 'Cảnh báo & Điều tra',
+  fleet: 'Quan ly Fleet',
+  logs: 'Kho Log S3',
+  intel: 'Tình báo & Phân tích',
+  posture: 'Tư thế Đám mây',
+  settings: 'Cài đặt',
+}
 
 const getStoredSettings = () => {
   try {
@@ -222,9 +234,32 @@ const NAV_ITEMS = [
 
 export default function App() {
   const [activePage, setActivePage] = useState('console')
+  const [language, setLanguage] = useState(() => {
+    try {
+      const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY)
+      return stored === 'vi' ? 'vi' : 'en'
+    } catch {
+      return 'en'
+    }
+  })
   const [userPrefs, setUserPrefs] = useState(() => getStoredSettings())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => Boolean(getStoredSettings().sidebarCollapsed))
   const [sessionLocked, setSessionLocked] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  const isVietnamese = language === 'vi'
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSidebarOpen(false)
+    }
+  }, [isMobile])
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -335,6 +370,7 @@ export default function App() {
 
   const navigateTo = (pageKey) => {
     setActivePage(pageKey)
+    if (isMobile) setMobileSidebarOpen(false)
     writeAuditLog('navigation', { page: pageKey })
   }
 
@@ -354,6 +390,19 @@ export default function App() {
     writeAuditLog('session_unlocked')
   }
 
+  const toggleLanguage = () => {
+    setLanguage((prev) => {
+      const next = prev === 'en' ? 'vi' : 'en'
+      try {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, next)
+      } catch {
+        // ignore storage failures
+      }
+      writeAuditLog('language_toggle', { language: next })
+      return next
+    })
+  }
+
   const renderNavItems = () => (
     <Menu>
       {NAV_ITEMS.map(item => (
@@ -364,7 +413,7 @@ export default function App() {
           onClick={() => navigateTo(item.key)}
           icon={item.icon}
         >
-          {item.label}
+          {isVietnamese ? (VI_NAV_LABELS[item.key] || item.label) : item.label}
         </MenuItem>
       ))}
     </Menu>
@@ -372,8 +421,8 @@ export default function App() {
 
   return (
     <ProSidebarProvider>
-      <div className={`layout${isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}`}>
-        <Sidebar breakPoint="md" collapsed={isSidebarCollapsed}>
+      <div className={`layout${!isMobile && isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}${mobileSidebarOpen ? ' layout--mobile-nav-open' : ''}`}>
+        <Sidebar collapsed={!isMobile && isSidebarCollapsed}>
           <div className="app-sidebar__header">
             <div className="app-sidebar__brand">
               <div className="app-sidebar__logo">
@@ -384,41 +433,79 @@ export default function App() {
                 <p>{sidebarDisplayName}</p>
               </div>
             </div>
-            <button
-              type="button"
-              className="sidebar-toggle"
-              onClick={handleToggleSidebar}
-              aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-              aria-expanded={!isSidebarCollapsed}
-            >
-              <svg
-                className="sidebar-toggle__icon"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            {isMobile ? (
+              mobileSidebarOpen && (
+                <button
+                  type="button"
+                  className="mobile-nav-close"
+                  onClick={() => setMobileSidebarOpen(false)}
+                  aria-label="Close navigation"
+                >
+                  ✕
+                </button>
+              )
+            ) : (
+              <button
+                type="button"
+                className="sidebar-toggle"
+                onClick={handleToggleSidebar}
+                aria-label={isSidebarCollapsed ? (isVietnamese ? 'Mở rộng điều hướng' : 'Expand navigation') : (isVietnamese ? 'Thu gọn điều hướng' : 'Collapse navigation')}
+                aria-expanded={!isSidebarCollapsed}
               >
-                <polyline points="15 6 9 12 15 18" />
-              </svg>
-            </button>
+                <svg
+                  className="sidebar-toggle__icon"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="15 6 9 12 15 18" />
+                </svg>
+              </button>
+            )}
           </div>
           {renderNavItems()}
-          <div className="app-sidebar__footer">v0.4 ? Live telemetry</div>
+          <div className="app-sidebar__footer">
+            <button
+              type="button"
+              className="app-sidebar__lang-toggle"
+              onClick={toggleLanguage}
+            >
+              {isVietnamese ? '🇺🇸 EN' : '🇻🇳 VI'}
+            </button>
+            <div>v0.4 · {isVietnamese ? 'Du lieu thoi gian thuc' : 'Live telemetry'}</div>
+          </div>
         </Sidebar>
 
+        {mobileSidebarOpen && (
+          <div
+            className="mobile-backdrop"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         <main className="main">
-          {activePage === 'console' && <QuickAccess onNavigate={navigateTo} />}
-          {activePage === 'traffic-view' && <TrafficView />}
-          {activePage === 'alerts-ledger' && <AlertsLedger />}
-          {activePage === 'fleet' && <HoneypotFleetManager />}
-          {activePage === 'logs' && <S3LogExplorer />}
-          {activePage === 'intel' && <IntelAnalytics />}
-          {activePage === 'posture' && <CloudPosture />}
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          {activePage === 'console' && <QuickAccess onNavigate={navigateTo} language={language} />}
+          {activePage === 'traffic-view' && <TrafficView language={language} />}
+          {activePage === 'alerts-ledger' && <AlertsLedger language={language} />}
+          {activePage === 'fleet' && <HoneypotFleetManager language={language} />}
+          {activePage === 'logs' && <S3LogExplorer language={language} />}
+          {activePage === 'intel' && <IntelAnalytics language={language} />}
+          {activePage === 'posture' && <CloudPosture language={language} />}
           {activePage === 'settings' && <Settings />}
 
         </main>
@@ -426,14 +513,15 @@ export default function App() {
         <ChatAssistant />
 
         {sessionLocked && (
-          <div className="session-lock" role="dialog" aria-modal="true" aria-label="Session locked">
+          <div className="session-lock" role="dialog" aria-modal="true" aria-label={isVietnamese ? 'Phiên đã bị khóa' : 'Session locked'}>
             <div className="session-lock__card">
-              <h2>Session Locked</h2>
+              <h2>{isVietnamese ? 'Phiên đã bị khóa' : 'Session Locked'}</h2>
               <p>
-                Your idle timeout is set to {Math.round(sessionTimeoutMs / 60000)} minutes.
-                Click below to resume your session.
+                {isVietnamese
+                  ? `Thời gian chờ không hoạt động là ${Math.round(sessionTimeoutMs / 60000)} phút. Bấm bên dưới để tiếp tục phiên.`
+                  : `Your idle timeout is set to ${Math.round(sessionTimeoutMs / 60000)} minutes. Click below to resume your session.`}
               </p>
-              <button type="button" onClick={unlockSession}>Resume Session</button>
+              <button type="button" onClick={unlockSession}>{isVietnamese ? 'Tiếp tục phiên' : 'Resume Session'}</button>
             </div>
           </div>
         )}
