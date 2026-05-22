@@ -7,9 +7,8 @@ import S3LogExplorer from './pages/S3LogExplorer'
 import IntelAnalytics from './pages/IntelAnalytics'
 import CloudPosture from './pages/CloudPosture'
 import Settings from './pages/Settings'
-import OrgOnboarding from './pages/OrgOnboarding'
 import ChatAssistant from './ChatAssistant'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+// Auth Components
 import { MockAuthProvider } from './contexts/MockAuthContext'
 import Login from './components/Login'
 import Signup from './components/Signup'
@@ -20,10 +19,19 @@ import { ProSidebarProvider, Sidebar, Menu, MenuItem } from 'react-pro-sidebar'
 const SETTINGS_STORAGE_KEY = 'phantomwall_settings'
 const SETTINGS_SAVED_EVENT = 'phantomwall:settings-saved'
 const AUDIT_LOG_STORAGE_KEY = 'phantomwall_audit_log'
-const ORG_ONBOARDING_STORAGE_KEY = 'phantomwall_org_onboarding'
 const DEFAULT_SESSION_TIMEOUT_MIN = 60
-const USE_MOCK_AUTH =
-  import.meta.env.VITE_USE_MOCK_AUTH === 'true' || !import.meta.env.VITE_COGNITO_CLIENT_ID
+const LANGUAGE_STORAGE_KEY = 'phantomwall_language'
+
+const VI_NAV_LABELS = {
+  console: 'Trung tâm Điều khiển',
+  'traffic-view': 'Nhật ký Lưu lượng',
+  'alerts-ledger': 'Cảnh báo & Điều tra',
+  fleet: 'Quan ly Fleet',
+  logs: 'Kho Log S3',
+  intel: 'Tình báo & Phân tích',
+  posture: 'Tư thế Đám mây',
+  settings: 'Cài đặt',
+}
 
 const getStoredSettings = () => {
   try {
@@ -225,67 +233,33 @@ const NAV_ITEMS = [
 ]
 
 export default function App() {
-  const Provider = USE_MOCK_AUTH ? MockAuthProvider : AuthProvider
-  return (
-    <Provider>
-      <WrappedAppShell />
-    </Provider>
-  )
-}
-
-function WrappedAppShell() {
-  const auth = useAuth()
-  return <AppShell auth={auth} />
-}
-
-function AppShell({ auth }) {
-  const { isAuthenticated, user, logout } = auth
   const [activePage, setActivePage] = useState('console')
+  const [language, setLanguage] = useState(() => {
+    try {
+      const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY)
+      return stored === 'vi' ? 'vi' : 'en'
+    } catch {
+      return 'en'
+    }
+  })
   const [userPrefs, setUserPrefs] = useState(() => getStoredSettings())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => Boolean(getStoredSettings().sidebarCollapsed))
   const [sessionLocked, setSessionLocked] = useState(false)
-  const [authView, setAuthView] = useState('login')
-  const [pendingVerificationEmail, setPendingVerificationEmail] = useState('')
-  const [onboardingRecord, setOnboardingRecord] = useState(null)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  const isVietnamese = language === 'vi'
 
   useEffect(() => {
-    if (!user?.email) {
-      setOnboardingRecord(null)
-      return
-    }
-    const onboardingKey = `${ORG_ONBOARDING_STORAGE_KEY}:${user.sub || user.email}`
-    try {
-      const raw = localStorage.getItem(onboardingKey)
-      setOnboardingRecord(raw ? JSON.parse(raw) : null)
-    } catch {
-      setOnboardingRecord(null)
-    }
-  }, [user?.email, user?.sub])
+    const onResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
-  const completeOrgOnboarding = (details) => {
-    if (!user?.email) return
-    const onboardingKey = `${ORG_ONBOARDING_STORAGE_KEY}:${user.sub || user.email}`
-    const nextRecord = {
-      ...details,
-      completedAt: new Date().toISOString(),
-      userEmail: user.email,
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSidebarOpen(false)
     }
-    localStorage.setItem(onboardingKey, JSON.stringify(nextRecord))
-    setOnboardingRecord(nextRecord)
-  }
-
-  const handleSignOut = () => {
-    logout()
-    setOnboardingRecord(null)
-    setAuthView('login')
-  }
-
-  const handleResetOnboarding = () => {
-    if (!user?.email) return
-    const onboardingKey = `${ORG_ONBOARDING_STORAGE_KEY}:${user.sub || user.email}`
-    localStorage.removeItem(onboardingKey)
-    setOnboardingRecord(null)
-  }
+  }, [isMobile])
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -396,6 +370,7 @@ function AppShell({ auth }) {
 
   const navigateTo = (pageKey) => {
     setActivePage(pageKey)
+    if (isMobile) setMobileSidebarOpen(false)
     writeAuditLog('navigation', { page: pageKey })
   }
 
@@ -415,6 +390,19 @@ function AppShell({ auth }) {
     writeAuditLog('session_unlocked')
   }
 
+  const toggleLanguage = () => {
+    setLanguage((prev) => {
+      const next = prev === 'en' ? 'vi' : 'en'
+      try {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, next)
+      } catch {
+        // ignore storage failures
+      }
+      writeAuditLog('language_toggle', { language: next })
+      return next
+    })
+  }
+
   const renderNavItems = () => (
     <Menu>
       {NAV_ITEMS.map(item => (
@@ -425,66 +413,16 @@ function AppShell({ auth }) {
           onClick={() => navigateTo(item.key)}
           icon={item.icon}
         >
-          {item.label}
+          {isVietnamese ? (VI_NAV_LABELS[item.key] || item.label) : item.label}
         </MenuItem>
       ))}
     </Menu>
   )
 
-  if (!isAuthenticated) {
-    if (authView === 'signup') {
-      return (
-        <Signup
-          onSwitchToLogin={() => setAuthView('login')}
-          onSignupSuccess={(email) => {
-            setPendingVerificationEmail(email)
-            setAuthView('verify')
-          }}
-        />
-      )
-    }
-
-    if (authView === 'verify') {
-      return (
-        <VerifyEmail
-          email={pendingVerificationEmail}
-          onVerifySuccess={() => setAuthView('login')}
-          onCancel={() => setAuthView('signup')}
-        />
-      )
-    }
-
-    if (authView === 'forgot') {
-      return (
-        <ForgotPassword
-          onBackToLogin={() => setAuthView('login')}
-          onResetSuccess={() => setAuthView('login')}
-        />
-      )
-    }
-
-    return (
-      <Login
-        onSwitchToSignup={() => setAuthView('signup')}
-        onSwitchToForgotPassword={() => setAuthView('forgot')}
-      />
-    )
-  }
-
-  if (!onboardingRecord?.completedAt) {
-    return (
-      <OrgOnboarding
-        user={user}
-        onComplete={completeOrgOnboarding}
-        onLogout={logout}
-      />
-    )
-  }
-
   return (
     <ProSidebarProvider>
-      <div className={`layout${isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}`}>
-        <Sidebar breakPoint="md" collapsed={isSidebarCollapsed}>
+      <div className={`layout${!isMobile && isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}${mobileSidebarOpen ? ' layout--mobile-nav-open' : ''}`}>
+        <Sidebar collapsed={!isMobile && isSidebarCollapsed}>
           <div className="app-sidebar__header">
             <div className="app-sidebar__brand">
               <div className="app-sidebar__logo">
@@ -495,75 +433,79 @@ function AppShell({ auth }) {
                 <p>{sidebarDisplayName}</p>
               </div>
             </div>
-            <button
-              type="button"
-              className="sidebar-toggle"
-              onClick={handleToggleSidebar}
-              aria-label={isSidebarCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-              aria-expanded={!isSidebarCollapsed}
-            >
-              <svg
-                className="sidebar-toggle__icon"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+            {isMobile ? (
+              mobileSidebarOpen && (
+                <button
+                  type="button"
+                  className="mobile-nav-close"
+                  onClick={() => setMobileSidebarOpen(false)}
+                  aria-label="Close navigation"
+                >
+                  ✕
+                </button>
+              )
+            ) : (
+              <button
+                type="button"
+                className="sidebar-toggle"
+                onClick={handleToggleSidebar}
+                aria-label={isSidebarCollapsed ? (isVietnamese ? 'Mở rộng điều hướng' : 'Expand navigation') : (isVietnamese ? 'Thu gọn điều hướng' : 'Collapse navigation')}
+                aria-expanded={!isSidebarCollapsed}
               >
-                <polyline points="15 6 9 12 15 18" />
-              </svg>
-            </button>
+                <svg
+                  className="sidebar-toggle__icon"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="15 6 9 12 15 18" />
+                </svg>
+              </button>
+            )}
           </div>
           {renderNavItems()}
           <div className="app-sidebar__footer">
-            <div>v0.4 ? Live telemetry</div>
             <button
               type="button"
-              onClick={handleResetOnboarding}
-              style={{
-                marginTop: '0.5rem',
-                background: 'transparent',
-                border: '1px solid rgba(100, 116, 139, 0.4)',
-                color: '#94a3b8',
-                borderRadius: '0.4rem',
-                padding: '0.3rem 0.5rem',
-                cursor: 'pointer',
-                fontSize: '0.75rem',
-              }}
+              className="app-sidebar__lang-toggle"
+              onClick={toggleLanguage}
             >
-              Re-run onboarding
+              {isVietnamese ? '🇺🇸 EN' : '🇻🇳 VI'}
             </button>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              style={{
-                marginTop: '0.4rem',
-                background: 'transparent',
-                border: '1px solid rgba(100, 116, 139, 0.4)',
-                color: '#cbd5e1',
-                borderRadius: '0.4rem',
-                padding: '0.3rem 0.5rem',
-                cursor: 'pointer',
-                fontSize: '0.75rem',
-              }}
-            >
-              Sign out
-            </button>
+            <div>v0.4 · {isVietnamese ? 'Du lieu thoi gian thuc' : 'Live telemetry'}</div>
           </div>
         </Sidebar>
 
+        {mobileSidebarOpen && (
+          <div
+            className="mobile-backdrop"
+            onClick={() => setMobileSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
         <main className="main">
-          {activePage === 'console' && <QuickAccess onNavigate={navigateTo} />}
-          {activePage === 'traffic-view' && <TrafficView />}
-          {activePage === 'alerts-ledger' && <AlertsLedger />}
-          {activePage === 'fleet' && <HoneypotFleetManager />}
-          {activePage === 'logs' && <S3LogExplorer />}
-          {activePage === 'intel' && <IntelAnalytics />}
-          {activePage === 'posture' && <CloudPosture />}
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          {activePage === 'console' && <QuickAccess onNavigate={navigateTo} language={language} />}
+          {activePage === 'traffic-view' && <TrafficView language={language} />}
+          {activePage === 'alerts-ledger' && <AlertsLedger language={language} />}
+          {activePage === 'fleet' && <HoneypotFleetManager language={language} />}
+          {activePage === 'logs' && <S3LogExplorer language={language} />}
+          {activePage === 'intel' && <IntelAnalytics language={language} />}
+          {activePage === 'posture' && <CloudPosture language={language} />}
           {activePage === 'settings' && <Settings />}
 
         </main>
@@ -571,14 +513,15 @@ function AppShell({ auth }) {
         <ChatAssistant />
 
         {sessionLocked && (
-          <div className="session-lock" role="dialog" aria-modal="true" aria-label="Session locked">
+          <div className="session-lock" role="dialog" aria-modal="true" aria-label={isVietnamese ? 'Phiên đã bị khóa' : 'Session locked'}>
             <div className="session-lock__card">
-              <h2>Session Locked</h2>
+              <h2>{isVietnamese ? 'Phiên đã bị khóa' : 'Session Locked'}</h2>
               <p>
-                Your idle timeout is set to {Math.round(sessionTimeoutMs / 60000)} minutes.
-                Click below to resume your session.
+                {isVietnamese
+                  ? `Thời gian chờ không hoạt động là ${Math.round(sessionTimeoutMs / 60000)} phút. Bấm bên dưới để tiếp tục phiên.`
+                  : `Your idle timeout is set to ${Math.round(sessionTimeoutMs / 60000)} minutes. Click below to resume your session.`}
               </p>
-              <button type="button" onClick={unlockSession}>Resume Session</button>
+              <button type="button" onClick={unlockSession}>{isVietnamese ? 'Tiếp tục phiên' : 'Resume Session'}</button>
             </div>
           </div>
         )}
