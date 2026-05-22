@@ -239,6 +239,27 @@ footer{margin-top:24px}
   border-color: #475569;
   cursor: default;
 }
+
+@media (max-width: 768px) {
+  .chat-assistant {
+    right: 10px;
+    bottom: 12px;
+  }
+  .chat-assistant__toggle {
+    width: 44px;
+    height: 44px;
+  }
+  .chat-assistant__toggle svg {
+    width: 20px;
+    height: 20px;
+  }
+  .chat-assistant__panel {
+    width: calc(100vw - 24px);
+    max-height: 400px;
+    border-radius: 12px;
+    padding: 0.75rem;
+  }
+}
 .dashboard__meta {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
