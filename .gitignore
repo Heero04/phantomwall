@@ -16,7 +16,6 @@ BUSINESS-STRATEGY-PRIVATE.md
 
 # Node.js (package.json detected)
 node_modules/
-package-lock.json
 
 # Python virtual environments (if using venv or similar)
 env/
