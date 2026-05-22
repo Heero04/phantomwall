@@ -408,7 +408,7 @@ export default function App() {
             </button>
           </div>
           {renderNavItems()}
-          <div className="app-sidebar__footer">v0.4 ? Live telemetry</div>
+          <div className="app-sidebar__footer">v0.4 · Live telemetry</div>
         </Sidebar>
 
         <main className="main">

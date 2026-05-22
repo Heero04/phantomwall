@@ -1,0 +1,1 @@
+﻿{"httpMethod":"POST","body":"{\"action\":\"deploy\",\"name\":\"test-micro\",\"instance_type\":\"t2.micro\",\"trap_profile\":\"ssh\",\"os_type\":\"ubuntu\",\"dry_run\":true}"}

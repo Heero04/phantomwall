@@ -23,9 +23,9 @@ const LAMBDA_FUNCTIONS = [
 ]
 
 const S3_BUCKETS = [
-  { name: 'phantomwall-suricata-logs-dev', purpose: 'Suricata JSON event logs', encryption: 'AES-256', versioning: true, lifecycle: '90-day Glacier transition', publicAccess: 'Blocked' },
-  { name: 'phantomwall-athena-results-dev', purpose: 'Athena query result staging', encryption: 'AES-256', versioning: false, lifecycle: '30-day expiration', publicAccess: 'Blocked' },
-  { name: 'phantomwall-honeypot-scripts-dev', purpose: 'Honeypot bootstrap scripts', encryption: 'AES-256', versioning: true, lifecycle: 'None', publicAccess: 'Blocked' },
+  { name: 'phantomwall-suricata-logs', purpose: 'Suricata JSON event logs', encryption: 'AES-256', versioning: true, lifecycle: '90-day Glacier transition', publicAccess: 'Blocked' },
+  { name: 'phantomwall-athena-results', purpose: 'Athena query result staging', encryption: 'AES-256', versioning: false, lifecycle: '30-day expiration', publicAccess: 'Blocked' },
+  { name: 'phantomwall-honeypot-scripts', purpose: 'Honeypot bootstrap scripts', encryption: 'AES-256', versioning: true, lifecycle: 'None', publicAccess: 'Blocked' },
 ]
 
 const IAM_ROLES = [
@@ -113,7 +113,7 @@ const ENV_CONFIG = [
   { key: 'PROJECT_NAME', value: 'phantomwall', sensitive: false },
   { key: 'COGNITO_USER_POOL_ID', value: 'us-east-1-••••••••', sensitive: true },
   { key: 'COGNITO_CLIENT_ID', value: '••••••••••••••••••', sensitive: true },
-  { key: 'API_GATEWAY_ID', value: 'k4ddxqs7vi', sensitive: false },
+  { key: 'API_GATEWAY_ID', value: '••••••••••', sensitive: true },
   { key: 'WEBSOCKET_API_ID', value: '••••••••••', sensitive: true },
   { key: 'WAF_WEB_ACL_ARN', value: '••••••••••••••••••', sensitive: true },
   { key: 'AMPLIFY_APP_ID', value: 'd••••••••••', sensitive: true },

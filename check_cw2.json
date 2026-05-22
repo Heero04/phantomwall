@@ -1,0 +1,13 @@
+{
+  "commands": [
+    "cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json 2>/dev/null || echo CONFIG_NOT_FOUND",
+    "echo SEPARATOR1",
+    "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status 2>/dev/null || echo AGENT_NOT_RUNNING",
+    "echo SEPARATOR2",
+    "ls -la /var/log/suricata/eve.json 2>/dev/null || echo EVE_NOT_FOUND",
+    "echo SEPARATOR3",
+    "tail -2 /var/log/suricata/eve.json 2>/dev/null || echo NO_EVE_DATA",
+    "echo SEPARATOR4",
+    "tail -20 /var/log/honeypot-bootstrap.log 2>/dev/null || echo NO_BOOTSTRAP_LOG"
+  ]
+}

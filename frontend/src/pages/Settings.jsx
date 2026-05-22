@@ -28,7 +28,7 @@ const DEFAULT_SETTINGS = {
   notif_slack: false,
   notif_slackWebhook: '',
   /* API & Integrations */
-  api_endpoint: API_URL || 'https://k4ddxqs7vi.execute-api.us-east-1.amazonaws.com/prod',
+  api_endpoint: API_URL || 'https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod',
   api_timeout: 30,
   api_retries: 3,
   api_rateLimitRpm: 100,

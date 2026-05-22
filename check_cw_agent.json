@@ -1,0 +1,16 @@
+{
+  "commands": [
+    "echo '=== CW Agent Config ==='",
+    "cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json 2>/dev/null || echo 'CONFIG NOT FOUND'",
+    "echo '=== CW Agent Status ==='",
+    "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a status 2>/dev/null || echo 'AGENT NOT RUNNING'",
+    "echo '=== Suricata Status ==='",
+    "systemctl status suricata --no-pager 2>/dev/null | head -20 || echo 'SURICATA NOT FOUND'",
+    "echo '=== Eve.json exists? ==='",
+    "ls -la /var/log/suricata/eve.json 2>/dev/null || echo 'EVE NOT FOUND'",
+    "echo '=== Last 3 lines of eve.json ==='",
+    "tail -3 /var/log/suricata/eve.json 2>/dev/null || echo 'NO EVE DATA'",
+    "echo '=== Bootstrap log ==='",
+    "tail -30 /var/log/honeypot-bootstrap.log 2>/dev/null || echo 'NO BOOTSTRAP LOG'"
+  ]
+}

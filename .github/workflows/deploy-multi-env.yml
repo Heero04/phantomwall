@@ -3,7 +3,7 @@ name: Deploy Multi Environment
 on:
   push:
     branches:
-      - Dev
+      - showcase
       - demo/org-onboarding
   workflow_dispatch:
     inputs:
@@ -24,7 +24,7 @@ jobs:
   deploy:
     name: Build and Deploy
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment != '' && github.event.inputs.target_environment) || (github.ref_name == 'Dev' && 'dev' || 'demo') }}
+    environment: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.target_environment != '' && github.event.inputs.target_environment) || (github.ref_name == 'showcase' && 'dev' || 'demo') }}
 
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
@@ -39,7 +39,7 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.target_environment }}" ]]; then
             DEPLOY_ENV="${{ github.event.inputs.target_environment }}"
-          elif [[ "${{ github.ref_name }}" == "Dev" ]]; then
+          elif [[ "${{ github.ref_name }}" == "showcase" ]]; then
             DEPLOY_ENV="dev"
           else
             DEPLOY_ENV="demo"
