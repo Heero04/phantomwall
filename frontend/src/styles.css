@@ -585,6 +585,12 @@ html, body {
     min-height: auto;
   }
 }
+
+@media (max-width: 768px) {
+  .layout {
+    display: block;
+  }
+}
 /* react-pro-sidebar overrides */
 .layout {
   background: #070b14;
@@ -659,12 +665,24 @@ html, body {
   }
   .main {
     padding-top: 3.5rem;
+    width: 100%;
   }
   .sidebar-toggle {
     display: none;
   }
   .ps-sidebar-root {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    z-index: 1200;
+    height: 100vh !important;
     width: 280px !important;
+    min-width: 0 !important;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .ps-sidebar-root.ps-toggled {
+    transform: translateX(0);
   }
   .ps-sidebar-container .ps-menu-button {
     padding: 0.78rem 0.95rem !important;
