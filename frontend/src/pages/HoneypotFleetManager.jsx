@@ -364,6 +364,7 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
    ═══════════════════════════════════════════════════════════════ */
 export default function HoneypotFleetManager() {
   const NOT_IMPLEMENTED_TRAP_PROFILES = new Set(['rdp', 'dns', 'ftp'])
+  const isDemoMode = !API_URL
   const [fleet, setFleet] = useState([])
   const [trapType, setTrapType] = useState('all')
   const [region, setRegion] = useState('us-east-1')
@@ -886,7 +887,7 @@ export default function HoneypotFleetManager() {
               onClick={() => { setDeployResult(null); setShowDeployModal(true) }}
               className="fleet__btn-deploy"
             >
-              🚀 Deploy Honeypot
+              {isDemoMode ? '🧪 Simulate Deploy' : '🚀 Deploy Honeypot'}
             </button>
             <button type="button" onClick={refreshFleet} disabled={loading} className="fleet__btn-refresh">
               {loading ? 'Refreshing…' : '⟳ Refresh'}
@@ -1083,7 +1084,7 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
         <div className="fleet__modal-overlay" onClick={() => !deploying && setShowDeployModal(false)}>
           <div className="fleet__modal" onClick={(e) => e.stopPropagation()}>
             <div className="fleet__modal-header">
-              <h3>🚀 Deploy New Honeypot</h3>
+              <h3>{isDemoMode ? '🧪 Simulate New Honeypot' : '🚀 Deploy New Honeypot'}</h3>
               <button
                 type="button"
                 className="fleet__modal-close"
@@ -1193,6 +1194,9 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                 </label>
 
                 <div className="fleet__modal-info">
+                  {isDemoMode && (
+                    <p>🧪 Demo mode: this action is simulated only and does not create AWS resources.</p>
+                  )}
                   <p>⚡ Launches with Suricata IDS + CloudWatch Agent pre-installed.</p>
                   <p>🖥️ Supports Ubuntu 22.04 LTS &amp; Amazon Linux 2023.</p>
                   <p>🛡️ Uses profile-specific security group &amp; IAM profile.</p>
@@ -1215,7 +1219,7 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                     onClick={handleDeploy}
                     disabled={deploying}
                   >
-                    {deploying ? '⏳ Deploying…' : '🚀 Deploy'}
+                    {deploying ? '⏳ Deploying…' : isDemoMode ? '🧪 Simulate Deploy' : '🚀 Deploy'}
                   </button>
                 </div>
               </div>

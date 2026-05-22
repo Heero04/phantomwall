@@ -1,6 +1,23 @@
 import React, { useEffect, useRef, useState } from "react"
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
+const SHOWCASE_CHAT_MODE = true
+
+const DEMO_RESPONSES = [
+  "Demo AI (simulated): Detected elevated SSH scanning from 203.0.113.42 against honeypot-ssh-east in the last hour. No production systems were exposed.",
+  "Demo AI (simulated): Top activity is credential stuffing over HTTP from 198.51.100.77. WAF challenge rules reduced successful probes by 92%.",
+  "Demo AI (simulated): Current risk trend is stable. Critical signatures are isolated to decoy assets and response playbooks are marked completed.",
+  "Demo AI (simulated): A multi-port scan from 192.0.2.23 touched 22/80/443/8080 and was blocked. Similar traffic has appeared in 3 regions today.",
+]
+
+function pickDemoResponse(prompt) {
+  const text = prompt.toLowerCase()
+  if (text.includes("last hour") || text.includes("recent")) return DEMO_RESPONSES[0]
+  if (text.includes("waf") || text.includes("web")) return DEMO_RESPONSES[1]
+  if (text.includes("risk") || text.includes("critical")) return DEMO_RESPONSES[2]
+  if (text.includes("scan") || text.includes("port")) return DEMO_RESPONSES[3]
+  return DEMO_RESPONSES[Math.floor(Math.random() * DEMO_RESPONSES.length)]
+}
 
 export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false)
@@ -9,7 +26,7 @@ export default function ChatAssistant() {
       id: "assistant-welcome",
       role: "assistant",
       content:
-        "Hi! I can summarise recent honeypot activity. Ask something like 'Anything interesting in the last hour?'",
+        "Hi! I am running in Demo AI mode with simulated responses for showcase safety. Ask something like 'Anything interesting in the last hour?'",
     },
   ])
   const [input, setInput] = useState("")
@@ -39,8 +56,14 @@ export default function ChatAssistant() {
     setIsSending(true)
 
     try {
-      if (!API_URL) {
-        throw new Error("VITE_SURICATA_API_URL is not configured")
+      if (SHOWCASE_CHAT_MODE || !API_URL) {
+        const assistantMessage = {
+          id: `assistant-demo-${Date.now()}`,
+          role: "assistant",
+          content: pickDemoResponse(prompt),
+        }
+        setMessages(prev => [...prev, assistantMessage])
+        return
       }
 
       const response = await fetch(`${API_URL}/chat`, {
@@ -83,8 +106,8 @@ export default function ChatAssistant() {
       {isOpen && (
         <div className="chat-assistant__panel">
           <header>
-            <h3>Phantom AI (preview)</h3>
-            <p>Powered by AWS Bedrock + Suricata telemetry.</p>
+            <h3>Phantom AI (Demo Simulated)</h3>
+            <p>Showcase-safe mode: responses are generated from mock security data.</p>
           </header>
 
           <div className="chat-assistant__messages" ref={scrollRef}>
@@ -104,7 +127,7 @@ export default function ChatAssistant() {
           <form className="chat-assistant__composer" onSubmit={handleSend}>
             <input
               type="text"
-              placeholder="Ask about honeypot activity"
+              placeholder="Ask about mock honeypot activity"
               value={input}
               onChange={e => setInput(e.target.value)}
               disabled={isSending}
