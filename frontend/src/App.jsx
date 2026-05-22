@@ -433,38 +433,41 @@ export default function App() {
                 <p>{sidebarDisplayName}</p>
               </div>
             </div>
-            {isMobile && mobileSidebarOpen && (
+            {isMobile ? (
+              mobileSidebarOpen && (
+                <button
+                  type="button"
+                  className="mobile-nav-close"
+                  onClick={() => setMobileSidebarOpen(false)}
+                  aria-label="Close navigation"
+                >
+                  ✕
+                </button>
+              )
+            ) : (
               <button
                 type="button"
-                className="mobile-nav-close"
-                onClick={() => setMobileSidebarOpen(false)}
-                aria-label="Close navigation"
+                className="sidebar-toggle"
+                onClick={handleToggleSidebar}
+                aria-label={isSidebarCollapsed ? (isVietnamese ? 'Mở rộng điều hướng' : 'Expand navigation') : (isVietnamese ? 'Thu gọn điều hướng' : 'Collapse navigation')}
+                aria-expanded={!isSidebarCollapsed}
               >
-                ✕
+                <svg
+                  className="sidebar-toggle__icon"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="15 6 9 12 15 18" />
+                </svg>
               </button>
             )}
-            <button
-              type="button"
-              className="sidebar-toggle"
-              onClick={handleToggleSidebar}
-              aria-label={isSidebarCollapsed ? (isVietnamese ? 'Mở rộng điều hướng' : 'Expand navigation') : (isVietnamese ? 'Thu gọn điều hướng' : 'Collapse navigation')}
-              aria-expanded={!isSidebarCollapsed}
-            >
-              <svg
-                className="sidebar-toggle__icon"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="15 6 9 12 15 18" />
-              </svg>
-            </button>
           </div>
           {renderNavItems()}
           <div className="app-sidebar__footer">
