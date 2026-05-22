@@ -246,7 +246,20 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => Boolean(getStoredSettings().sidebarCollapsed))
   const [sessionLocked, setSessionLocked] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
   const isVietnamese = language === 'vi'
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSidebarOpen(false)
+    }
+  }, [isMobile])
 
   useEffect(() => {
     const syncFromStorage = () => {
@@ -357,6 +370,7 @@ export default function App() {
 
   const navigateTo = (pageKey) => {
     setActivePage(pageKey)
+    if (isMobile) setMobileSidebarOpen(false)
     writeAuditLog('navigation', { page: pageKey })
   }
 
@@ -407,8 +421,8 @@ export default function App() {
 
   return (
     <ProSidebarProvider>
-      <div className={`layout${isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}`}>
-        <Sidebar breakPoint="md" collapsed={isSidebarCollapsed} toggled={mobileSidebarOpen} onBackdropClick={() => setMobileSidebarOpen(false)}>
+      <div className={`layout${!isMobile && isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}${mobileSidebarOpen ? ' layout--mobile-nav-open' : ''}`}>
+        <Sidebar breakPoint="md" collapsed={!isMobile && isSidebarCollapsed} toggled={mobileSidebarOpen} onBackdropClick={() => setMobileSidebarOpen(false)}>
           <div className="app-sidebar__header">
             <div className="app-sidebar__brand">
               <div className="app-sidebar__logo">

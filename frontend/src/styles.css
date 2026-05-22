@@ -660,6 +660,28 @@ html, body {
   .main {
     padding-top: 3.5rem;
   }
+  .sidebar-toggle {
+    display: none;
+  }
+  .ps-sidebar-root {
+    width: 280px !important;
+  }
+  .ps-sidebar-container .ps-menu-button {
+    padding: 0.78rem 0.95rem !important;
+    font-size: 1rem;
+  }
+  .ps-sidebar-container .ps-menuitem-root {
+    margin: 0.3rem 0.55rem;
+  }
+  .menu-item__icon {
+    width: 20px;
+    height: 20px;
+  }
+  .layout--mobile-nav-open .chat-assistant,
+  .layout--mobile-nav-open .mobile-nav-toggle {
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .app-sidebar__lang-toggle {
