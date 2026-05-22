@@ -422,7 +422,7 @@ export default function App() {
   return (
     <ProSidebarProvider>
       <div className={`layout${!isMobile && isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}${mobileSidebarOpen ? ' layout--mobile-nav-open' : ''}`}>
-        <Sidebar breakPoint="md" collapsed={!isMobile && isSidebarCollapsed} toggled={mobileSidebarOpen} onBackdropClick={() => setMobileSidebarOpen(false)}>
+        <Sidebar collapsed={!isMobile && isSidebarCollapsed}>
           <div className="app-sidebar__header">
             <div className="app-sidebar__brand">
               <div className="app-sidebar__logo">
