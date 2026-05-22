@@ -245,6 +245,7 @@ export default function App() {
   const [userPrefs, setUserPrefs] = useState(() => getStoredSettings())
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => Boolean(getStoredSettings().sidebarCollapsed))
   const [sessionLocked, setSessionLocked] = useState(false)
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const isVietnamese = language === 'vi'
 
   useEffect(() => {
@@ -407,7 +408,7 @@ export default function App() {
   return (
     <ProSidebarProvider>
       <div className={`layout${isSidebarCollapsed ? ' layout--sidebar-collapsed' : ''}`}>
-        <Sidebar breakPoint="md" collapsed={isSidebarCollapsed}>
+        <Sidebar breakPoint="md" collapsed={isSidebarCollapsed} toggled={mobileSidebarOpen} onBackdropClick={() => setMobileSidebarOpen(false)}>
           <div className="app-sidebar__header">
             <div className="app-sidebar__brand">
               <div className="app-sidebar__logo">
@@ -455,6 +456,14 @@ export default function App() {
         </Sidebar>
 
         <main className="main">
+          <button
+            type="button"
+            className="mobile-nav-toggle"
+            onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open navigation"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
           {activePage === 'console' && <QuickAccess onNavigate={navigateTo} language={language} />}
           {activePage === 'traffic-view' && <TrafficView language={language} />}
           {activePage === 'alerts-ledger' && <AlertsLedger language={language} />}

@@ -635,6 +635,33 @@ html, body {
   border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.mobile-nav-toggle {
+  display: none;
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1100;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 768px) {
+  .mobile-nav-toggle {
+    display: inline-flex;
+  }
+  .main {
+    padding-top: 3.5rem;
+  }
+}
+
 .app-sidebar__lang-toggle {
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--pw-accent) 42%, transparent);
