@@ -350,11 +350,11 @@ export default function S3LogExplorer() {
         <div className="s3x__filter-row s3x__filter-row--secondary">
           <label>
             <span>Source IP</span>
-            <input type="text" placeholder="e.g. 192.168.1.100" value={srcIp} onChange={(e) => setSrcIp(e.target.value)} />
+            <input type="text" placeholder="e.g. 203.0.113.42" value={srcIp} onChange={(e) => setSrcIp(e.target.value)} />
           </label>
           <label>
             <span>Destination IP</span>
-            <input type="text" placeholder="e.g. 10.0.0.5" value={destIp} onChange={(e) => setDestIp(e.target.value)} />
+            <input type="text" placeholder="e.g. 198.51.100.7" value={destIp} onChange={(e) => setDestIp(e.target.value)} />
           </label>
           <div className="s3x__filter-actions">
             <button type="submit" className="s3x__search-btn" disabled={loading}>

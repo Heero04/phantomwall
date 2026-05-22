@@ -97,7 +97,7 @@ export default function ChatAssistant() {
               </div>
             ))}
             {isSending && (
-              <div className="chat-assistant__message chat-assistant__message--assistant">Working?</div>
+              <div className="chat-assistant__message chat-assistant__message--assistant">Analyzing...</div>
             )}
           </div>
 
