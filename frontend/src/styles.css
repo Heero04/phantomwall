@@ -242,15 +242,16 @@ footer{margin-top:24px}
 
 @media (max-width: 768px) {
   .chat-assistant {
-    right: 8px;
+    right: 0;
+    left: 0;
     bottom: 10px;
-    left: 8px;
-    align-items: stretch;
+    padding: 0 10px;
+    box-sizing: border-box;
+    align-items: flex-end;
   }
   .chat-assistant__toggle {
     width: 42px;
     height: 42px;
-    align-self: flex-end;
   }
   .chat-assistant__toggle svg {
     width: 18px;
@@ -262,6 +263,7 @@ footer{margin-top:24px}
     border-radius: 12px;
     padding: 0.75rem;
     font-size: 0.85rem;
+    box-sizing: border-box;
   }
   .chat-assistant__panel header h3 {
     font-size: 0.9rem;
