@@ -96,9 +96,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  position: sticky;
-  top: 1rem;
-  z-index: 40;
+  position: static;
 }
 
 /* ── Panels ─────────────────────────────────────────────────── */

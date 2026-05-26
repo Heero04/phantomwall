@@ -44,7 +44,9 @@ const normalizeRestEvent = (raw) => ({
   ].filter(Boolean).join('\n') || 'No additional detail',
 });
 
-export default function TrafficView() {
+export default function TrafficView({ language = 'en' }) {
+  const isVietnamese = language === 'vi';
+  const [isMobile, setIsMobile]               = useState(() => window.innerWidth <= 900);
   const [entries, setEntries]                 = useState([]);
   const [live, setLive]                       = useState(true);
   const [query, setQuery]                     = useState('');
@@ -64,7 +66,40 @@ export default function TrafficView() {
   useEffect(() => { liveRef.current = live; }, [live]);
 
   useEffect(() => {
-    if (!API_URL) return;
+    const onResize = () => setIsMobile(window.innerWidth <= 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  useEffect(() => {
+    if (!API_URL) {
+      const now = Date.now();
+      const mockRaw = [
+        { event_id: 'tv-001', src_ip: '203.0.113.42', dest_ip: '192.0.2.10', dest_port: 22, proto: 'TCP', severity: 1, event_time: new Date(now - 45000).toISOString(), signature: 'ET SCAN Potential SSH Scan OUTBOUND', category: 'Attempted Information Leak', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-ssh-east', honeypot_os: 'linux' },
+        { event_id: 'tv-002', src_ip: '198.51.100.17', dest_ip: '192.0.2.10', dest_port: 443, proto: 'TCP', severity: 3, event_time: new Date(now - 120000).toISOString(), signature: 'ET POLICY TLS Suspicious SNI', category: 'Potentially Bad Traffic', country_name: 'Russia', flag: '🇷🇺', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-003', src_ip: '203.0.113.88', dest_ip: '192.0.2.11', dest_port: 3389, proto: 'TCP', severity: 1, event_time: new Date(now - 240000).toISOString(), signature: 'ET EXPLOIT MS RDP Brute Force Attempt', category: 'Web Application Attack', country_name: 'Brazil', flag: '🇧🇷', honeypot_name: 'honeypot-rdp-west', honeypot_os: 'windows' },
+        { event_id: 'tv-004', src_ip: '192.0.2.201', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 2, event_time: new Date(now - 360000).toISOString(), signature: 'ET SCAN Nmap Scripting Engine User-Agent', category: 'Detection of a Network Scan', country_name: 'Vietnam', flag: '🇻🇳', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-005', src_ip: '198.51.100.55', dest_ip: '192.0.2.12', dest_port: 23, proto: 'TCP', severity: 2, event_time: new Date(now - 600000).toISOString(), signature: 'ET SCAN Telnet BruteForce Login Attempt', category: 'Attempted Information Leak', country_name: 'India', flag: '🇮🇳', honeypot_name: 'honeypot-telnet-east', honeypot_os: 'linux' },
+        { event_id: 'tv-006', src_ip: '203.0.113.119', dest_ip: '192.0.2.10', dest_port: 8080, proto: 'TCP', severity: 1, event_time: new Date(now - 900000).toISOString(), signature: 'ET EXPLOIT Apache Struts Remote Code Execution', category: 'Web Application Attack', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-007', src_ip: '192.0.2.44', dest_ip: '192.0.2.11', dest_port: 22, proto: 'TCP', severity: 2, event_time: new Date(now - 1200000).toISOString(), signature: 'ET POLICY SSH Connection Brute Force', category: 'Attempted Information Leak', country_name: 'Germany', flag: '🇩🇪', honeypot_name: 'honeypot-ssh-west', honeypot_os: 'linux' },
+        { event_id: 'tv-008', src_ip: '203.0.113.200', dest_ip: '192.0.2.10', dest_port: 53, proto: 'UDP', severity: 3, event_time: new Date(now - 1500000).toISOString(), signature: 'ET POLICY DNS Query to .onion Proxy Domain', category: 'Potentially Bad Traffic', country_name: 'Russia', flag: '🇷🇺', honeypot_name: 'honeypot-dns-east', honeypot_os: 'linux' },
+        { event_id: 'tv-009', src_ip: '198.51.100.78', dest_ip: '192.0.2.12', dest_port: 443, proto: 'TCP', severity: 3, event_time: new Date(now - 1800000).toISOString(), signature: 'ET POLICY Outbound TLS Connection to Known C2', category: 'A Network Trojan was Detected', country_name: 'Brazil', flag: '🇧🇷', honeypot_name: 'honeypot-http-west', honeypot_os: 'linux' },
+        { event_id: 'tv-010', src_ip: '192.0.2.155', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 1, event_time: new Date(now - 2100000).toISOString(), signature: 'ET WEB_SERVER XSS Attempt via Cookie Header', category: 'Web Application Attack', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-011', src_ip: '203.0.113.33', dest_ip: '192.0.2.11', dest_port: 22, proto: 'TCP', severity: 2, event_time: new Date(now - 2400000).toISOString(), signature: 'ET SCAN LibSSH Based SSH Scan', category: 'Detection of a Network Scan', country_name: 'India', flag: '🇮🇳', honeypot_name: 'honeypot-ssh-east', honeypot_os: 'linux' },
+        { event_id: 'tv-012', src_ip: '198.51.100.91', dest_ip: '192.0.2.10', dest_port: 8080, proto: 'TCP', severity: 2, event_time: new Date(now - 2700000).toISOString(), signature: 'ET POLICY Incoming Basic Auth Base64 HTTP', category: 'Attempted Information Leak', country_name: 'USA', flag: '🇺🇸', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-013', src_ip: '203.0.113.67', dest_ip: '192.0.2.12', dest_port: 53, proto: 'UDP', severity: 3, event_time: new Date(now - 3300000).toISOString(), signature: 'ET POLICY DNS Query to Suspicious TLD (.xyz)', category: 'Potentially Bad Traffic', country_name: 'Vietnam', flag: '🇻🇳', honeypot_name: 'honeypot-dns-east', honeypot_os: 'linux' },
+        { event_id: 'tv-014', src_ip: '192.0.2.88', dest_ip: '192.0.2.10', dest_port: 445, proto: 'TCP', severity: 1, event_time: new Date(now - 3900000).toISOString(), signature: 'ET EXPLOIT Possible EternalBlue MS17-010 Echo Response', category: 'Misc Attack', country_name: 'China', flag: '🇨🇳', honeypot_name: 'honeypot-smb-east', honeypot_os: 'windows' },
+        { event_id: 'tv-015', src_ip: '198.51.100.222', dest_ip: '192.0.2.11', dest_port: 3306, proto: 'TCP', severity: 2, event_time: new Date(now - 4500000).toISOString(), signature: 'ET SCAN MySQL Login Brute Force Attempt', category: 'Attempted Information Leak', country_name: 'Germany', flag: '🇩🇪', honeypot_name: 'honeypot-db-west', honeypot_os: 'linux' },
+        { event_id: 'tv-016', src_ip: '203.0.113.150', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 2, event_time: new Date(now - 5100000).toISOString(), signature: 'ET WEB_SERVER PHP Remote File Inclusion', category: 'Web Application Attack', country_name: 'Russia', flag: '🇷🇺', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-017', src_ip: '192.0.2.30', dest_ip: '192.0.2.12', dest_port: 22, proto: 'TCP', severity: 3, event_time: new Date(now - 5700000).toISOString(), signature: 'ET POLICY SSH Banner Grab Attempt', category: 'Not Suspicious Traffic', country_name: 'USA', flag: '🇺🇸', honeypot_name: 'honeypot-ssh-west', honeypot_os: 'linux' },
+        { event_id: 'tv-018', src_ip: '203.0.113.77', dest_ip: '192.0.2.10', dest_port: 80, proto: 'TCP', severity: 1, event_time: new Date(now - 6300000).toISOString(), signature: 'ET EXPLOIT Possible SQL Injection Attempt SELECT FROM', category: 'Web Application Attack', country_name: 'Brazil', flag: '🇧🇷', honeypot_name: 'honeypot-http-east', honeypot_os: 'linux' },
+        { event_id: 'tv-019', src_ip: '198.51.100.133', dest_ip: '192.0.2.11', dest_port: 443, proto: 'TCP', severity: 3, event_time: new Date(now - 6600000).toISOString(), signature: 'ET POLICY Observed Let\'s Encrypt Certificate for Suspicious TLD', category: 'Potentially Bad Traffic', country_name: 'India', flag: '🇮🇳', honeypot_name: 'honeypot-http-west', honeypot_os: 'linux' },
+        { event_id: 'tv-020', src_ip: '192.0.2.99', dest_ip: '192.0.2.10', dest_port: 0, proto: 'ICMP', severity: 3, event_time: new Date(now - 7200000).toISOString(), signature: 'ET SCAN ICMP Flood Outbound', category: 'Detection of a Denial of Service Attack', country_name: 'Vietnam', flag: '🇻🇳', honeypot_name: 'honeypot-ssh-east', honeypot_os: 'linux' },
+      ];
+      setEntries(mockRaw.map(normalizeRestEvent));
+      setWsStatus('demo');
+      return;
+    }
     (async () => {
       try {
         const res = await fetch(API_URL + '/events');
@@ -265,10 +300,11 @@ export default function TrafficView() {
   };
 
   const statusConfig = {
-    connected:  { color: '#10b981', label: 'Live Stream' },
-    connecting: { color: '#f59e0b', label: 'Connecting...' },
-    error:      { color: '#ef4444', label: 'Reconnecting...' },
-    polling:    { color: '#06b6d4', label: 'Polling (15s)' },
+    connected:  { color: '#10b981', label: isVietnamese ? 'Luong truc tiep' : 'Live Stream' },
+    connecting: { color: '#f59e0b', label: isVietnamese ? 'Dang ket noi...' : 'Connecting...' },
+    error:      { color: '#ef4444', label: isVietnamese ? 'Dang ket noi lai...' : 'Reconnecting...' },
+    polling:    { color: '#06b6d4', label: isVietnamese ? 'Polling (15s)' : 'Polling (15s)' },
+    demo:       { color: '#8b5cf6', label: isVietnamese ? 'Che do Demo' : 'Demo Mode' },
   };
   const wsInfo = statusConfig[wsStatus] || statusConfig.connecting;
 
@@ -277,16 +313,20 @@ export default function TrafficView() {
       <div className="traffic__shell">
         <section className="traffic__hero">
           <div className="traffic__hero-text">
-            <p className="traffic__eyebrow">Network Telemetry</p>
-            <h2>Traffic Ledger</h2>
-            <p className="traffic__hero-sub">Real-time Suricata alert stream from your honeypot fleet &mdash; inspect packets, filter by protocol, and trigger response actions.</p>
+            <p className="traffic__eyebrow">{isVietnamese ? 'Giam sat mang' : 'Network Telemetry'}</p>
+            <h2>{isVietnamese ? 'Nhat ky luu luong' : 'Traffic Ledger'}</h2>
+            <p className="traffic__hero-sub">
+              {isVietnamese
+                ? 'Luong canh bao Suricata theo thoi gian thuc tu fleet honeypot — kiem tra goi tin, loc theo giao thuc va kich hoat phan ung.'
+                : 'Real-time Suricata alert stream from your honeypot fleet &mdash; inspect packets, filter by protocol, and trigger response actions.'}
+            </p>
           </div>
           <div className="traffic__hero-actions">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.6rem', borderRadius: '0.5rem', border: '1px solid ' + wsInfo.color + '33', background: wsInfo.color + '11', fontSize: '0.72rem', color: wsInfo.color, fontWeight: 600 }}>
               {wsInfo.label}
             </div>
             <button onClick={() => setLive((v) => !v)} className={'traffic__live-btn ' + (live ? 'traffic__live-btn--active' : 'traffic__live-btn--paused')}>
-              {live ? 'Live' : 'Paused'}
+              {live ? (isVietnamese ? 'Truc tiep' : 'Live') : (isVietnamese ? 'Tam dung' : 'Paused')}
             </button>
           </div>
         </section>
@@ -304,7 +344,7 @@ export default function TrafficView() {
 
         <div className="traffic__panel">
           <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap', marginBottom: '0.65rem' }}>
-            <input type="search" placeholder="Filter by IP, protocol, action, signature, country..." value={query} onChange={(e) => setQuery(e.target.value)} style={{ flex: '1 1 320px', background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(100, 116, 139, 0.5)', borderRadius: '0.5rem', color: '#e2e8f0', padding: '0.55rem 0.7rem' }} />
+            <input type="search" placeholder={isVietnamese ? 'Loc theo IP, giao thuc, hanh dong, chu ky, quoc gia...' : 'Filter by IP, protocol, action, signature, country...'} value={query} onChange={(e) => setQuery(e.target.value)} style={{ flex: '1 1 320px', background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(100, 116, 139, 0.5)', borderRadius: '0.5rem', color: '#e2e8f0', padding: '0.55rem 0.7rem' }} />
             {['TCP', 'UDP', 'HTTP', 'TLS', 'ICMP'].map((p) => {
               const active = activeProtocols.has(p);
               return (<button key={p} onClick={() => toggleProtocol(p)} style={{ border: active ? '1px solid rgba(34, 211, 238, 0.45)' : '1px solid rgba(100, 116, 139, 0.35)', background: active ? 'rgba(34, 211, 238, 0.12)' : 'rgba(15, 23, 42, 0.45)', color: active ? '#67e8f9' : '#cbd5e1', borderRadius: '0.45rem', padding: '0.42rem 0.55rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}>{p}</button>);
@@ -315,9 +355,47 @@ export default function TrafficView() {
             {filteredEntries.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>&#128225;</div>
-                <div style={{ fontSize: '0.9rem' }}>{entries.length === 0 ? 'Waiting for live traffic - events will appear as your honeypots detect activity.' : 'No events match your current filter.'}</div>
+                <div style={{ fontSize: '0.9rem' }}>{entries.length === 0 ? (isVietnamese ? 'Dang cho luu luong truc tiep - su kien se hien thi khi honeypot phat hien hoat dong.' : 'Waiting for live traffic - events will appear as your honeypots detect activity.') : (isVietnamese ? 'Khong co su kien nao khop voi bo loc hien tai.' : 'No events match your current filter.')}</div>
               </div>
             ) : (
+              isMobile ? (
+                <div className="traffic__mobile-list">
+                  {filteredEntries.map((e) => {
+                    const isExp = !!expanded[e.id];
+                    return (
+                      <article key={e.id} className="traffic__mobile-item">
+                        <div className="traffic__mobile-row">
+                          <span className="traffic__mobile-ip">{e.ip}</span>
+                          <span className="traffic__mobile-time">{relativeTime(e.timestamp)}</span>
+                        </div>
+                        <div className="traffic__mobile-row">
+                          <span className="traffic__mobile-pill">{e.protocol}</span>
+                          <span className={e.action === 'BLOCKED' ? 'traffic__mobile-pill traffic__mobile-pill--blocked' : 'traffic__mobile-pill traffic__mobile-pill--accepted'}>
+                            {e.action}
+                          </span>
+                        </div>
+                        <div className="traffic__mobile-meta">
+                          {isVietnamese ? 'Dich' : 'Target'}: {e.dest_ip || '—'}:{e.port || '—'} · {isVietnamese ? 'Bay' : 'Honeypot'}: {e.honeypot_name}
+                        </div>
+                        <div className="traffic__mobile-actions">
+                          <button onClick={() => handleCopy(e.id, e.ip)}>
+                            {copiedId === e.id ? (isVietnamese ? 'Da sao chep' : 'Copied') : (isVietnamese ? 'Sao chep IP' : 'Copy IP')}
+                          </button>
+                          <button onClick={() => openResponseModal(e)}>
+                            {isVietnamese ? 'Phan ung' : 'Respond'}
+                          </button>
+                          <button onClick={() => toggleExpand(e.id)}>
+                            {isExp ? (isVietnamese ? 'An chi tiet' : 'Hide') : (isVietnamese ? 'Xem chi tiet' : 'Inspect')}
+                          </button>
+                        </div>
+                        {isExp && (
+                          <pre className="traffic__mobile-payload">{e.payload}</pre>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.55rem', minWidth: '860px' }}>
                 <thead>
                   <tr style={{ color: '#94a3b8', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -361,6 +439,7 @@ export default function TrafficView() {
                   })}
                 </tbody>
               </table>
+              )
             )}
           </div>
         </div>

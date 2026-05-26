@@ -138,6 +138,100 @@
   color: #cbd5e1;
 }
 
+/* ── Mobile Entry Cards ─────────────────────────────────────── */
+.traffic__mobile-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.traffic__mobile-item {
+  background: rgba(15, 23, 42, 0.62);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+}
+
+.traffic__mobile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.traffic__mobile-ip {
+  color: #a5f3fc;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 0.78rem;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.25);
+  border-radius: 0.35rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.traffic__mobile-time {
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+}
+
+.traffic__mobile-pill {
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.traffic__mobile-pill--blocked {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.15);
+}
+
+.traffic__mobile-pill--accepted {
+  color: #86efac;
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(74, 222, 128, 0.15);
+}
+
+.traffic__mobile-meta {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.traffic__mobile-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.traffic__mobile-actions button {
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  border-radius: 0.4rem;
+  background: rgba(15, 23, 42, 0.55);
+  color: #cbd5e1;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.traffic__mobile-payload {
+  margin: 0.55rem 0 0;
+  background: #071019;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.55rem;
+  color: #e2e8f0;
+  font-family: "JetBrains Mono", "Consolas", monospace;
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow: auto;
+}
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .traffic__stat-grid {
@@ -148,5 +242,9 @@
   }
   .traffic__hero {
     flex-direction: column;
+  }
+  .traffic__hero-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
