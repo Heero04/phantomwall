@@ -8,6 +8,7 @@ import IntelAnalytics from './pages/IntelAnalytics'
 import CloudPosture from './pages/CloudPosture'
 import Settings from './pages/Settings'
 import ChatAssistant from './ChatAssistant'
+import OnboardingModal from './components/OnboardingModal'
 // Auth Components
 import { MockAuthProvider } from './contexts/MockAuthContext'
 import Login from './components/Login'
@@ -511,6 +512,8 @@ export default function App() {
         </main>
 
         <ChatAssistant />
+
+        <OnboardingModal />
 
         {sessionLocked && (
           <div className="session-lock" role="dialog" aria-modal="true" aria-label={isVietnamese ? 'Phiên đã bị khóa' : 'Session locked'}>
