@@ -46,6 +46,7 @@ const normalizeRestEvent = (raw) => ({
 
 export default function TrafficView({ language = 'en' }) {
   const isVietnamese = language === 'vi';
+  const [isMobile, setIsMobile]               = useState(() => window.innerWidth <= 900);
   const [entries, setEntries]                 = useState([]);
   const [live, setLive]                       = useState(true);
   const [query, setQuery]                     = useState('');
@@ -63,6 +64,12 @@ export default function TrafficView({ language = 'en' }) {
   const pingTimer      = useRef(null);
   const liveRef        = useRef(live);
   useEffect(() => { liveRef.current = live; }, [live]);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   useEffect(() => {
     if (!API_URL) {
@@ -351,6 +358,44 @@ export default function TrafficView({ language = 'en' }) {
                 <div style={{ fontSize: '0.9rem' }}>{entries.length === 0 ? (isVietnamese ? 'Dang cho luu luong truc tiep - su kien se hien thi khi honeypot phat hien hoat dong.' : 'Waiting for live traffic - events will appear as your honeypots detect activity.') : (isVietnamese ? 'Khong co su kien nao khop voi bo loc hien tai.' : 'No events match your current filter.')}</div>
               </div>
             ) : (
+              isMobile ? (
+                <div className="traffic__mobile-list">
+                  {filteredEntries.map((e) => {
+                    const isExp = !!expanded[e.id];
+                    return (
+                      <article key={e.id} className="traffic__mobile-item">
+                        <div className="traffic__mobile-row">
+                          <span className="traffic__mobile-ip">{e.ip}</span>
+                          <span className="traffic__mobile-time">{relativeTime(e.timestamp)}</span>
+                        </div>
+                        <div className="traffic__mobile-row">
+                          <span className="traffic__mobile-pill">{e.protocol}</span>
+                          <span className={e.action === 'BLOCKED' ? 'traffic__mobile-pill traffic__mobile-pill--blocked' : 'traffic__mobile-pill traffic__mobile-pill--accepted'}>
+                            {e.action}
+                          </span>
+                        </div>
+                        <div className="traffic__mobile-meta">
+                          {isVietnamese ? 'Dich' : 'Target'}: {e.dest_ip || '—'}:{e.port || '—'} · {isVietnamese ? 'Bay' : 'Honeypot'}: {e.honeypot_name}
+                        </div>
+                        <div className="traffic__mobile-actions">
+                          <button onClick={() => handleCopy(e.id, e.ip)}>
+                            {copiedId === e.id ? (isVietnamese ? 'Da sao chep' : 'Copied') : (isVietnamese ? 'Sao chep IP' : 'Copy IP')}
+                          </button>
+                          <button onClick={() => openResponseModal(e)}>
+                            {isVietnamese ? 'Phan ung' : 'Respond'}
+                          </button>
+                          <button onClick={() => toggleExpand(e.id)}>
+                            {isExp ? (isVietnamese ? 'An chi tiet' : 'Hide') : (isVietnamese ? 'Xem chi tiet' : 'Inspect')}
+                          </button>
+                        </div>
+                        {isExp && (
+                          <pre className="traffic__mobile-payload">{e.payload}</pre>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.55rem', minWidth: '860px' }}>
                 <thead>
                   <tr style={{ color: '#94a3b8', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -394,6 +439,7 @@ export default function TrafficView({ language = 'en' }) {
                   })}
                 </tbody>
               </table>
+              )
             )}
           </div>
         </div>
