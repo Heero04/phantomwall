@@ -241,12 +241,10 @@ const QuickAccess = ({ onNavigate, language = 'en' }) => {
         {/* ── Hero ──────────────────────────────────────────── */}
         <section className="qa__hero">
           <div className="qa__hero-text">
-            <p className="qa__eyebrow">{isVietnamese ? '⚡ Trung tam Dieu khien' : '⚡ Command Center'}</p>
-            <h2>{isVietnamese ? '🛡️ Truy cap nhanh' : '🛡️ Quick Access'}</h2>
+            <p className="qa__eyebrow">PHANTOMWALL SECURITY PLATFORM</p>
+            <h2>Cloud Honeypot Command Center</h2>
             <p className="qa__hero-sub">
-              {isVietnamese
-                ? 'Trang thai fleet theo thoi gian thuc, chi so de doa va thao tac nhanh — trung tam van hanh cua PhantomWall.'
-                : 'Real-time fleet status, threat metrics, and quick actions — your operational nerve center for PhantomWall.'}
+              Deploy decoy services, monitor attacker behavior in real time, and investigate threats — all from one dashboard.
             </p>
           </div>
           <div className="qa__hero-actions">
@@ -303,7 +301,32 @@ const QuickAccess = ({ onNavigate, language = 'en' }) => {
             </div>
           </div>
         </section>
-        
+
+        {/* ── How It Works ─────────────────────────────────────── */}
+        <section className="qa__how-it-works">
+          <div className="qa__hiw-step">
+            <div className="qa__hiw-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3>Deploy Honeypots</h3>
+            <p>Launch safe decoy services across AWS regions to attract attackers</p>
+          </div>
+          <div className="qa__hiw-step">
+            <div className="qa__hiw-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
+            </div>
+            <h3>Collect Traffic</h3>
+            <p>Capture real-time logs, IDS alerts, and network telemetry</p>
+          </div>
+          <div className="qa__hiw-step">
+            <div className="qa__hiw-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <h3>Investigate Threats</h3>
+            <p>Analyze alerts, trace attack origins, and take action</p>
+          </div>
+        </section>
+
         {/* Honeypot Status Card */}
         <div className="qa__fleet-card">
           <div style={{
