@@ -10,8 +10,8 @@
 # ===========================================================
 
 resource "aws_cloudwatch_log_group" "suricata" {
-  name              = var.cw_log_group
-  retention_in_days = 7 # Reduced from 30 days - data persists in DynamoDB (~$4/month savings)
+  name              = local.cw_log_group_resolved
+  retention_in_days = 7
 
   tags = {
     Project = var.project_name
@@ -110,6 +110,17 @@ data "archive_file" "suricata_lambda" {
   output_path = "${path.module}/lambda/suricata_ingest_v3.zip"
 }
 
+resource "aws_cloudwatch_log_group" "suricata_ingest" {
+  name              = "/aws/lambda/${var.project_name}-lambda-ingest-${var.environment}"
+  retention_in_days = 7
+
+  tags = {
+    Project = var.project_name
+    Env     = var.environment
+    Service = "suricata-ingest"
+  }
+}
+
 resource "aws_lambda_function" "suricata_ingest" {
   function_name    = "${var.project_name}-lambda-ingest-${var.environment}"
   role             = aws_iam_role.lambda_ingest.arn
@@ -148,7 +159,7 @@ resource "aws_lambda_permission" "allow_logs_per_instance" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.suricata_ingest.function_name
   principal     = "logs.${var.aws_region}.amazonaws.com"
-  source_arn    = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/*"
+  source_arn    = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/${var.project_name}-${var.environment}/*"
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "suricata_to_lambda" {

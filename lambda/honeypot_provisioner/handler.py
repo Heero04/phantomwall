@@ -40,7 +40,7 @@ import json
 import os
 import time
 import traceback
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import boto3
 
@@ -76,6 +76,8 @@ SG_MAP = {
 # Allowed instance types (cost guardrail)
 # Minimum 2 GB RAM required — Suricata + 48 K rules OOMs on 1 GB (t2.micro, t3.micro, t3a.micro)
 ALLOWED_TYPES = {"t3.small", "t3a.small", "t3.medium", "t3a.medium"}
+ALLOWED_MARKET_TYPES = {"spot", "on-demand"}
+SPOT_AUTO_DESTROY_HOURS = int(os.environ.get("SPOT_AUTO_DESTROY_HOURS", "24"))
 
 # ── OS Module Registry ──────────────────────────────────────────
 # Each OS module is imported lazily inside _get_os_module() so that
@@ -270,6 +272,7 @@ def _deploy(body: dict) -> dict:
     trap_profile = body.get("trap_profile", "default").lower()
     honeypot_name = body.get("name", "").strip()
     os_type = body.get("os_type", "ubuntu").lower()
+    market_type = body.get("market_type", "spot").lower()
 
     # ── Validation ──────────────────────────────────────────────
     if os_type not in ALLOWED_OS_TYPES:
@@ -285,6 +288,11 @@ def _deploy(body: dict) -> dict:
     if trap_profile not in TRAP_PROFILES:
         return _response(400, {
             "error": f"Unknown trap profile '{trap_profile}'. Available: {sorted(TRAP_PROFILES.keys())}"
+        })
+
+    if market_type not in ALLOWED_MARKET_TYPES:
+        return _response(400, {
+            "error": f"Unsupported market_type '{market_type}'. Supported: {sorted(ALLOWED_MARKET_TYPES)}"
         })
 
     # ── Guardrail: max instance cap ─────────────────────────────
@@ -347,9 +355,38 @@ def _deploy(body: dict) -> dict:
     if INSTANCE_PROFILE:
         run_params["IamInstanceProfile"] = {"Name": INSTANCE_PROFILE}
 
-    result = _ec2.run_instances(**run_params)
+    if market_type == "spot":
+        run_params["InstanceMarketOptions"] = {
+            "MarketType": "spot",
+            "SpotOptions": {"SpotInstanceType": "one-time"},
+        }
+
+    try:
+        result = _ec2.run_instances(**run_params)
+        launch_mode = market_type
+    except _ec2.exceptions.ClientError as e:
+        if market_type != "spot":
+            raise
+
+        # Spot capacity can be temporarily unavailable in some AZs.
+        fallback_params = dict(run_params)
+        fallback_params.pop("InstanceMarketOptions", None)
+        result = _ec2.run_instances(**fallback_params)
+        launch_mode = "on-demand-fallback"
     instance = result["Instances"][0]
     instance_id = instance["InstanceId"]
+    spot_auto_destroy_at = None
+
+    if launch_mode == "spot":
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=SPOT_AUTO_DESTROY_HOURS)
+        spot_auto_destroy_at = expires_at.isoformat()
+        _ec2.create_tags(
+            Resources=[instance_id],
+            Tags=[
+                {"Key": "AutoDestroyAfterHours", "Value": str(SPOT_AUTO_DESTROY_HOURS)},
+                {"Key": "AutoDestroyAt", "Value": spot_auto_destroy_at},
+            ],
+        )
 
     # ── Create per-instance log group + subscription filters ────
     log_group_result = _setup_instance_log_group(instance_id)
@@ -364,7 +401,10 @@ def _deploy(body: dict) -> dict:
         "trap_ports": profile_info["ports"],
         "security_group": sg_id,
         "ami_id": ami_id,
+        "market_type": launch_mode,
         "state": instance["State"]["Name"],
+        "spot_auto_destroy_hours": SPOT_AUTO_DESTROY_HOURS if launch_mode == "spot" else None,
+        "spot_auto_destroy_at": spot_auto_destroy_at,
         "current_count": current_count + 1,
         "max_allowed": MAX_INSTANCES,
         "log_group": log_group_result["log_group"],

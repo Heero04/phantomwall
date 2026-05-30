@@ -9,12 +9,12 @@ import CloudPosture from './pages/CloudPosture'
 import Settings from './pages/Settings'
 import ChatAssistant from './ChatAssistant'
 import OnboardingModal from './components/OnboardingModal'
-// Auth Components
-import { MockAuthProvider } from './contexts/MockAuthContext'
+import { useAuth } from './contexts/AuthContext'
 import Login from './components/Login'
 import Signup from './components/Signup'
 import VerifyEmail from './components/VerifyEmail'
 import ForgotPassword from './components/ForgotPassword'
+import { AUTH_REQUIRED_EVENT } from './lib/apiClient'
 import { ProSidebarProvider, Sidebar, Menu, MenuItem } from 'react-pro-sidebar'
 
 const SETTINGS_STORAGE_KEY = 'phantomwall_settings'
@@ -234,6 +234,9 @@ const NAV_ITEMS = [
 ]
 
 export default function App() {
+  const { user, loading: authLoading, isAuthenticated, logout } = useAuth()
+  const [authView, setAuthView] = useState('login')
+  const [verificationEmail, setVerificationEmail] = useState('')
   const [activePage, setActivePage] = useState('console')
   const [language, setLanguage] = useState(() => {
     try {
@@ -286,8 +289,8 @@ export default function App() {
   }, [])
 
   const sidebarDisplayName = useMemo(
-    () => (userPrefs.displayName || 'Operator').trim() || 'Operator',
-    [userPrefs.displayName]
+    () => (userPrefs.displayName || user?.name || 'Operator').trim() || 'Operator',
+    [userPrefs.displayName, user?.name]
   )
   const sessionTimeoutMs = useMemo(() => {
     const configured = Number(userPrefs.sec_sessionTimeoutMin)
@@ -369,6 +372,17 @@ export default function App() {
     }
   }, [sessionTimeoutMs, sessionLocked, writeAuditLog])
 
+  useEffect(() => {
+    const handleAuthRequired = () => {
+      logout()
+      setAuthView('login')
+      setVerificationEmail('')
+    }
+
+    window.addEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired)
+    return () => window.removeEventListener(AUTH_REQUIRED_EVENT, handleAuthRequired)
+  }, [logout])
+
   const navigateTo = (pageKey) => {
     setActivePage(pageKey)
     if (isMobile) setMobileSidebarOpen(false)
@@ -402,6 +416,57 @@ export default function App() {
       writeAuditLog('language_toggle', { language: next })
       return next
     })
+  }
+
+  if (authLoading) {
+    return (
+      <div className="session-lock" role="status" aria-live="polite">
+        <div className="session-lock__card">
+          <h2>Loading account...</h2>
+          <p>Validating your authentication session.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    if (authView === 'signup') {
+      return (
+        <Signup
+          onSwitchToLogin={() => setAuthView('login')}
+          onSignupSuccess={(email) => {
+            setVerificationEmail(email)
+            setAuthView('verify')
+          }}
+        />
+      )
+    }
+
+    if (authView === 'verify') {
+      return (
+        <VerifyEmail
+          email={verificationEmail}
+          onVerifySuccess={() => setAuthView('login')}
+          onCancel={() => setAuthView('signup')}
+        />
+      )
+    }
+
+    if (authView === 'forgot') {
+      return (
+        <ForgotPassword
+          onBackToLogin={() => setAuthView('login')}
+          onResetSuccess={() => setAuthView('login')}
+        />
+      )
+    }
+
+    return (
+      <Login
+        onSwitchToSignup={() => setAuthView('signup')}
+        onSwitchToForgotPassword={() => setAuthView('forgot')}
+      />
+    )
   }
 
   const renderNavItems = () => (
@@ -478,6 +543,14 @@ export default function App() {
               onClick={toggleLanguage}
             >
               {isVietnamese ? '🇺🇸 EN' : '🇻🇳 VI'}
+            </button>
+            <button
+              type="button"
+              className="app-sidebar__lang-toggle"
+              onClick={logout}
+              title="Sign out"
+            >
+              {isVietnamese ? 'Đăng xuất' : 'Sign out'}
             </button>
             <div>v0.4 · {isVietnamese ? 'Du lieu thoi gian thuc' : 'Live telemetry'}</div>
           </div>

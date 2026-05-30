@@ -115,7 +115,7 @@ resource "aws_iam_role_policy" "lambda_fleet" {
           "logs:DescribeLogStreams",
           "logs:DescribeSubscriptionFilters"
         ],
-        Resource = "arn:aws:logs:*:*:log-group:/honeypot/suricata/*"
+        Resource = "arn:aws:logs:*:*:log-group:/honeypot/suricata/${var.project_name}-${var.environment}/*"
       },
       # DynamoDB – data-flow health checks (recent events / alerts)
       {
@@ -156,7 +156,7 @@ resource "aws_lambda_function" "fleet_manager" {
   environment {
     variables = {
       PROJECT_TAG         = var.project_name
-      CW_LOG_GROUP_PREFIX = "/honeypot/suricata"
+      CW_LOG_GROUP_PREFIX = "/honeypot/suricata/${var.project_name}-${var.environment}"
       EVENTS_TABLE        = aws_dynamodb_table.suricata_events.name
       ALERTS_TABLE        = aws_dynamodb_table.phantomwall_alerts[0].name
     }
@@ -193,9 +193,11 @@ resource "aws_apigatewayv2_route" "fleet_instances" {
 
 # POST /fleet/action
 resource "aws_apigatewayv2_route" "fleet_action" {
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /fleet/action"
-  target    = "integrations/${aws_apigatewayv2_integration.fleet_manager.id}"
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /fleet/action"
+  target             = "integrations/${aws_apigatewayv2_integration.fleet_manager.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 # ----------------------------------------------------------

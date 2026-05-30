@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import '../components/HoneypotFleetManager.css'
+import { apiFetch } from '../lib/apiClient'
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
 
@@ -147,6 +148,14 @@ const TRAP_ICONS = {
   SSH: '🔑', HTTP: '🌐', Telnet: '📟', RDP: '🖥️', DNS: '🌍',
 }
 
+const marketTypeLabel = (marketType) => {
+  const normalized = String(marketType || '').toLowerCase()
+  if (!normalized) return 'On-Demand'
+  if (normalized.includes('spot')) return 'Spot'
+  if (normalized.includes('on-demand') || normalized.includes('ondemand')) return 'On-Demand'
+  return normalized
+}
+
 /* ── SVG Donut Ring ───────────────────────────────────────────── */
 function FleetRing({ running, stopped, pending, total }) {
   const r = 54
@@ -263,6 +272,10 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
           <span className="fleet__type-badge">{item.instance_type}</span>
         </div>
         <div className="fleet__card-meta-item">
+          <span className="fleet__card-meta-label">Purchase</span>
+          <span className="fleet__type-badge">{marketTypeLabel(item.market_type)}</span>
+        </div>
+        <div className="fleet__card-meta-item">
           <span className="fleet__card-meta-label">OS</span>
           <span className="fleet__os-badge">{item.os_type === 'amazon-linux' ? '🟠 AL2023' : item.os_type === 'ubuntu' ? '🟣 Ubuntu' : item.os_type || '—'}</span>
         </div>
@@ -354,6 +367,17 @@ function InstanceCard({ item, busyAction, onAction, onDestroy }) {
         >
           {busyAction === `${item.instance_id}:destroy` ? '...' : '🗑️ DESTROY'}
         </button>
+        {String(item.status).toLowerCase() === 'running' && (
+          <button
+            type="button"
+            className="fleet__action-btn fleet__action-btn--reboot"
+            disabled={Boolean(busyAction)}
+            onClick={() => onAction(item, 'simulate-attack')}
+            title="Generate controlled malicious traffic for demo telemetry"
+          >
+            {busyAction === `${item.instance_id}:simulate-attack` ? '...' : '⚔️ ATTACK'}
+          </button>
+        )}
       </div>
     </article>
   )
@@ -381,6 +405,7 @@ export default function HoneypotFleetManager() {
     instance_type: 't3a.small',
     trap_profile: 'default',
     os_type: 'ubuntu',
+    market_type: 'spot',
   })
   const [deploying, setDeploying] = useState(false)
   const [deployResult, setDeployResult] = useState(null)
@@ -421,7 +446,7 @@ export default function HoneypotFleetManager() {
   const fetchWafStatus = useCallback(async () => {
     if (!API_URL) return
     try {
-      const res = await fetch(`${API_URL}/waf/status`)
+      const res = await apiFetch(`${API_URL}/waf/status`)
       if (!res.ok) return
       const data = await res.json()
       const rules = data.rules || {}
@@ -447,7 +472,7 @@ export default function HoneypotFleetManager() {
     if (!API_URL) return
     setWafLoading(true)
     try {
-      await fetch(`${API_URL}/waf/toggle-rule`, {
+      await apiFetch(`${API_URL}/waf/toggle-rule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rule_name: ruleName, enabled }),
@@ -466,7 +491,7 @@ export default function HoneypotFleetManager() {
     setWafLoading(true)
     const activate = !wafLockdownActive
     try {
-      await fetch(`${API_URL}/waf/lockdown`, {
+      await apiFetch(`${API_URL}/waf/lockdown`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activate }),
@@ -522,7 +547,7 @@ export default function HoneypotFleetManager() {
       params.set('region', region)
       if (trapType !== 'all') params.set('trap_type', trapType)
 
-      const response = await fetch(`${API_URL}/fleet/instances?${params}`)
+      const response = await apiFetch(`${API_URL}/fleet/instances?${params}`)
       if (!response.ok) throw new Error(`Fleet request failed (${response.status})`)
       const payload = await response.json()
       const items = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : [])
@@ -554,7 +579,23 @@ export default function HoneypotFleetManager() {
     }
 
     try {
-      const response = await fetch(`${API_URL}/fleet/action`, {
+      if (action === 'simulate-attack') {
+        const response = await apiFetch(`${API_URL}/attack/simulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            instance_id: instance.instance_id,
+            attack_profile: 'full_spectrum',
+            duration_seconds: 30,
+          }),
+        })
+        const payload = await response.json()
+        if (!response.ok) throw new Error(payload.error || `Attack simulation failed (${response.status})`)
+        setMessage(payload.message || `Attack simulation started for ${instance.name}.`)
+        return
+      }
+
+      const response = await apiFetch(`${API_URL}/fleet/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -591,7 +632,7 @@ export default function HoneypotFleetManager() {
     setDeployResult(null)
 
     try {
-      const response = await fetch(`${API_URL}/fleet/deploy`, {
+      const response = await apiFetch(`${API_URL}/fleet/deploy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(deployConfig),
@@ -630,7 +671,7 @@ export default function HoneypotFleetManager() {
     setMessage('')
 
     try {
-      const response = await fetch(`${API_URL}/fleet/destroy`, {
+      const response = await apiFetch(`${API_URL}/fleet/destroy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ instance_id: instance.instance_id }),
@@ -974,6 +1015,7 @@ export default function HoneypotFleetManager() {
                       <div className="fleet__az-type">
                         <span className="fleet__az-badge">{item.az || '-'}</span>
                         <span className="fleet__type-badge">{item.instance_type || '-'}</span>
+                        <span className="fleet__type-badge">{marketTypeLabel(item.market_type)}</span>
                         <span className="fleet__os-badge">{item.os_type === 'amazon-linux' ? '🟠 AL2023' : item.os_type === 'ubuntu' ? '🟣 Ubuntu' : item.os_type || '—'}</span>
                       </div>
                     </td>
@@ -1038,6 +1080,17 @@ export default function HoneypotFleetManager() {
                         >
                           {busyAction === `${item.instance_id}:destroy` ? '...' : '🗑️ DESTROY'}
                         </button>
+                        {String(item.status).toLowerCase() === 'running' && (
+                          <button
+                            type="button"
+                            className="fleet__action-btn fleet__action-btn--reboot"
+                            disabled={Boolean(busyAction)}
+                            onClick={() => runAction(item, 'simulate-attack')}
+                            title="Generate controlled malicious traffic for demo telemetry"
+                          >
+                            {busyAction === `${item.instance_id}:simulate-attack` ? '...' : '⚔️ ATTACK'}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1112,6 +1165,10 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                       <span>{deployResult.instance_type}</span>
                     </div>
                     <div className="fleet__deploy-result-row">
+                      <span>Purchase</span>
+                      <span>{marketTypeLabel(deployResult.market_type)}</span>
+                    </div>
+                    <div className="fleet__deploy-result-row">
                       <span>OS</span>
                       <span>{deployResult.os_type === 'amazon-linux' ? '🟠 Amazon Linux 2023' : '🟣 Ubuntu 22.04'}</span>
                     </div>
@@ -1175,6 +1232,18 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                     <option value="rdp">🖥️ RDP (coming soon)</option>
                     <option value="dns">🌍 DNS (coming soon)</option>
                     <option value="ftp">📁 FTP (coming soon)</option>
+                  </select>
+                </label>
+
+                <label className="fleet__modal-field">
+                  <span>Market Type</span>
+                  <select
+                    value={deployConfig.market_type}
+                    onChange={(e) => setDeployConfig(c => ({ ...c, market_type: e.target.value }))}
+                    disabled={deploying}
+                  >
+                    <option value="spot">Spot (recommended, lowest cost)</option>
+                    <option value="on-demand">On-Demand (capacity fallback)</option>
                   </select>
                 </label>
 

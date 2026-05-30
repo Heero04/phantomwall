@@ -22,6 +22,11 @@ variable "cw_log_group" {
   default = "/honeypot/suricata"
 }
 
+locals {
+  cw_log_group_resolved           = "/honeypot/suricata/${var.project_name}-${var.environment}"
+  cw_bootstrap_log_group_resolved = "/honeypot/bootstrap/${var.project_name}-${var.environment}"
+}
+
 variable "cw_bootstrap_log_group" {
   description = "CloudWatch log group name for bootstrap logs"
   type        = string
@@ -68,8 +73,8 @@ data "aws_subnets" "by_tag" {
 }
 
 resource "aws_cloudwatch_log_group" "honeypot_bootstrap" {
-  name              = var.cw_bootstrap_log_group
-  retention_in_days = 7 # Reduced from 14 days for cost optimization
+  name              = local.cw_bootstrap_log_group_resolved
+  retention_in_days = 7
 
   tags = {
     Project = var.project_name != "" ? var.project_name : "phantomwall"
@@ -182,40 +187,30 @@ resource "aws_iam_instance_profile" "cw_profile" {
   }
 }
 
-# EC2 Instance
+/* Static honeypot instance disabled for demo — users deploy on-demand via UI.
 resource "aws_instance" "honeypot" {
-  # The honeypot EC2 instance. Runs Suricata + CloudWatch Agent via
-  # user-data. Keep only one instance in the workspace to limit cost.
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_tag_value != "" && length(data.aws_subnets.by_tag.ids) > 0 ? data.aws_subnets.by_tag.ids[0] : var.public_subnet_id
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.honeypot_sg.id]
   iam_instance_profile        = aws_iam_instance_profile.cw_profile.name
-
-  # Attach key pair if provided. Preference order:
-  # 1) var.key_pair_name (existing key name supplied by user)
-  # 2) aws_key_pair.generated_key.key_name (auto-created when create_key_pair=true)
-  # 3) null (no SSH access)
   key_name = var.key_pair_name != "" ? var.key_pair_name : (var.create_key_pair ? aws_key_pair.generated_key[0].key_name : null)
 
-  # Runs Suricata setup and CloudWatch Agent configuration on boot.
-  # Uses simplified Ubuntu-only scripts for testing.
   user_data = templatefile("${path.module}/honeypot_simple_wrapper.sh.tpl", {
-    cw_log_group           = var.cw_log_group
-    cw_bootstrap_log_group = var.cw_bootstrap_log_group
+    cw_log_group           = local.cw_log_group_resolved
+    cw_bootstrap_log_group = local.cw_bootstrap_log_group_resolved
     suricata_script        = file("${path.module}/honeypot_ubuntu_simple.sh")
     cloudwatch_script      = file("${path.module}/honeypot_cloudwatch_agent.sh")
   })
 
   tags = {
-    # Name uses the two-part project and workspace pattern with a middle
-    # component controlled by `random_name` (set via tfvars/CLI).
     Name    = local.twoName
     Project = var.project_name != "" ? var.project_name : "phantomwall"
     Env     = var.environment
   }
 }
+*/
 
 # Optional: generate an SSH keypair locally and upload the public key to AWS
 resource "tls_private_key" "generated" {
@@ -237,7 +232,7 @@ resource "local_file" "private_key_file" {
 }
 
 output "log_group_name" {
-  value = var.cw_log_group
+  value = local.cw_log_group_resolved
 }
 
 

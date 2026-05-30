@@ -7,6 +7,7 @@ const VerifyEmail = ({ email, onVerifySuccess, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [verifySuccess, setVerifySuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,7 +17,10 @@ const VerifyEmail = ({ email, onVerifySuccess, onCancel }) => {
     const result = await confirmSignup(email, code);
     
     if (result.success) {
-      onVerifySuccess();
+      setVerifySuccess(true);
+      setTimeout(() => {
+        onVerifySuccess();
+      }, 1500);
     } else {
       setError(result.error || 'Invalid verification code');
     }
@@ -105,6 +109,22 @@ const VerifyEmail = ({ email, onVerifySuccess, onCancel }) => {
           </div>
         )}
 
+        {verifySuccess && (
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            color: '#22c55e',
+            fontSize: '0.95rem',
+            textAlign: 'center',
+            fontWeight: 600
+          }}>
+            ✓ Verified! Your account is confirmed. Redirecting to login...
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div style={{
@@ -170,7 +190,7 @@ const VerifyEmail = ({ email, onVerifySuccess, onCancel }) => {
 
           <button
             type="submit"
-            disabled={loading || code.length !== 6}
+            disabled={loading || code.length !== 6 || verifySuccess}
             style={{
               width: '100%',
               padding: '1rem',
@@ -199,7 +219,7 @@ const VerifyEmail = ({ email, onVerifySuccess, onCancel }) => {
               }
             }}
           >
-            {loading ? 'Verifying...' : 'Verify Email'}
+            {loading ? 'Verifying...' : verifySuccess ? 'Verified' : 'Verify Email'}
           </button>
         </form>
 

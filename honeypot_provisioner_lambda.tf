@@ -71,7 +71,7 @@ resource "aws_iam_role_policy" "lambda_provisioner" {
           "logs:DescribeSubscriptionFilters",
           "logs:TagLogGroup"
         ],
-        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/*"
+        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/${var.project_name}-${var.environment}/*"
       },
       # EC2 — describe (needed for AMI lookup & instance counting)
       {
@@ -178,8 +178,9 @@ resource "aws_lambda_function" "honeypot_provisioner" {
       SUBNET_ID         = var.subnet_tag_value != "" && length(data.aws_subnets.by_tag.ids) > 0 ? data.aws_subnets.by_tag.ids[0] : var.public_subnet_id
       SCRIPTS_BUCKET    = aws_s3_bucket.honeypot_scripts.id
       MAX_INSTANCES     = "5"
+      SPOT_AUTO_DESTROY_HOURS = "24"
       # Per-instance log group pipeline
-      CW_LOG_GROUP_PREFIX    = "/honeypot/suricata"
+      CW_LOG_GROUP_PREFIX    = "/honeypot/suricata/${var.project_name}-${var.environment}"
       CW_LOG_RETENTION_DAYS  = "7"
       INGEST_LAMBDA_ARN      = aws_lambda_function.suricata_ingest.arn
       ALERT_INDEXER_LAMBDA_ARN = local.alerts_enabled ? aws_lambda_function.alert_indexer[0].arn : ""
@@ -215,16 +216,20 @@ resource "aws_apigatewayv2_integration" "honeypot_provisioner" {
 
 # POST /fleet/deploy → launch honeypot
 resource "aws_apigatewayv2_route" "fleet_deploy" {
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /fleet/deploy"
-  target    = "integrations/${aws_apigatewayv2_integration.honeypot_provisioner.id}"
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /fleet/deploy"
+  target             = "integrations/${aws_apigatewayv2_integration.honeypot_provisioner.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 # POST /fleet/destroy → terminate honeypot
 resource "aws_apigatewayv2_route" "fleet_destroy" {
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /fleet/destroy"
-  target    = "integrations/${aws_apigatewayv2_integration.honeypot_provisioner.id}"
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /fleet/destroy"
+  target             = "integrations/${aws_apigatewayv2_integration.honeypot_provisioner.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 # ----------------------------------------------------------

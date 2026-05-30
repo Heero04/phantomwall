@@ -34,52 +34,18 @@ Resources:
 # - Tag management
 # ----------------------------------------------------------
 
+/* Kali instance disabled for demo — attack simulation handled by Lambda.
 resource "aws_instance" "kali" {
-  ami           = "ami-0206d67558efa3db1" # Kali Linux AMI
+  ami           = "ami-0206d67558efa3db1"
   instance_type = "t3.micro"
-  # Key selection priority:
-  # 1) user-provided `kali_key_name`
-  # 2) generated key `aws_key_pair.kali_generated[0]` when create_kali_key=true
-  # 3) omitted (no SSH access)
   key_name = var.kali_key_name != "" ? var.kali_key_name : (var.create_kali_key ? aws_key_pair.kali_generated[0].key_name : null)
-  # Subnet selection: prefer a tag lookup value, fall back to an explicit subnet id variable
   subnet_id = var.subnet_tag_value != "" ? data.aws_subnets.by_tag.ids[0] : var.public_subnet_id
-  # Attach IAM instance profile so the instance can use SSM (Session Manager)
   iam_instance_profile   = aws_iam_instance_profile.kali_profile.name
   vpc_security_group_ids = [aws_security_group.kali_sg.id]
-
-  user_data = <<-EOF
-    #!/bin/bash
-    set -e
-    set -x
-
-    # Optional: Refresh Kali archive keyring (sometimes helpful)
-    mkdir -p /usr/share/keyrings
-    curl -fsSL https://archive.kali.org/archive-keyring.gpg -o /usr/share/keyrings/kali-archive-keyring.gpg
-
-    # Update and install tools
-    apt update
-    DEBIAN_FRONTEND=noninteractive apt install -y nmap hydra nikto sqlmap metasploit-framework
-
-    # Install and start the SSM agent to allow AWS Session Manager access
-    if ! command -v amazon-ssm-agent >/dev/null 2>&1; then
-      apt-get update || true
-      apt-get install -y amazon-ssm-agent || true
-      # Fallback: download and install the Debian package from S3 for the region
-      if [ ! -f /usr/bin/amazon-ssm-agent ] && [ ! -f /usr/local/bin/amazon-ssm-agent ]; then
-        curl -fsSL "https://s3.amazonaws.com/amazon-ssm-${var.aws_region}/latest/debian_amd64/amazon-ssm-agent.deb" -o /tmp/amazon-ssm-agent.deb || true
-        dpkg -i /tmp/amazon-ssm-agent.deb || true
-      fi
-    fi
-    systemctl enable amazon-ssm-agent || true
-    systemctl start amazon-ssm-agent || true
-  EOF
-
-  tags = {
-    Name = "${var.project_name}-ec2-kali-instance-${var.environment}"
-    # AutoStop tag removed - keep instance running during testing
-  }
+  user_data = "..."
+  tags = { Name = "${var.project_name}-ec2-kali-instance-${var.environment}" }
 }
+*/
 
 
 # ----------------------------------------------------------

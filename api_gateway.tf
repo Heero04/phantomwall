@@ -106,6 +106,18 @@ resource "aws_apigatewayv2_api" "suricata" {
   }
 }
 
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.suricata.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "${var.project_name}-cognito-authorizer-${var.environment}"
+
+  jwt_configuration {
+    audience = [aws_cognito_user_pool_client.phantomwall_web.id]
+    issuer   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.phantomwall.id}"
+  }
+}
+
 resource "aws_apigatewayv2_stage" "suricata" {
   api_id      = aws_apigatewayv2_api.suricata.id
   name        = "prod"
@@ -124,8 +136,8 @@ resource "aws_apigatewayv2_stage" "suricata" {
 }
 
 resource "aws_cloudwatch_log_group" "api_gw_logs" {
-  name              = "/aws/lambda/${aws_lambda_function.suricata_api.function_name}"
-  retention_in_days = 7 # Reduced from 14 days for cost optimization
+  name              = "/aws/apigateway/${var.project_name}-api-gateway-${var.environment}"
+  retention_in_days = 7
 }
 
 resource "aws_apigatewayv2_integration" "suricata" {
@@ -171,9 +183,11 @@ resource "aws_apigatewayv2_integration" "suricata_chat" {
 }
 
 resource "aws_apigatewayv2_route" "suricata_chat" {
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /chat"
-  target    = "integrations/${aws_apigatewayv2_integration.suricata_chat.id}"
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /chat"
+  target             = "integrations/${aws_apigatewayv2_integration.suricata_chat.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_lambda_permission" "apigw_chat_invoke" {

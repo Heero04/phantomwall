@@ -1,18 +1,17 @@
 // Outputs: useful runtime values for the honeypot module. Keep these
 // minimal to avoid leaking sensitive info. The public IP and instance ID
 // are useful for quick testing and teardown.
+/* Static instance outputs disabled — instances are created on-demand via UI.
 output "honeypot_public_ip" {
   description = "Public IP of the honeypot EC2 instance"
   value       = aws_instance.honeypot.public_ip
 }
 
-// Output Honeypot EC2 instance ID for use in ad-hoc scripts and automation
 output "honeypot_instance_id" {
   description = "EC2 Instance ID of the honeypot"
   value       = aws_instance.honeypot.id
 }
 
-// Kali outputs: public IP and instance ID
 output "kali_public_ip" {
   description = "Public IP of the Kali EC2 instance"
   value       = aws_instance.kali.public_ip
@@ -22,6 +21,7 @@ output "kali_instance_id" {
   description = "EC2 Instance ID of the Kali instance"
   value       = aws_instance.kali.id
 }
+*/
 
 output "suricata_log_group" {
   description = "CloudWatch log group name receiving Suricata logs"

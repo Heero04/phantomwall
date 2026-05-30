@@ -354,6 +354,7 @@ def _list_fleet(params: dict) -> dict:
                 "name": name or iid,
                 "trap_type": trap_type,
                 "instance_type": inst.get("InstanceType", ""),
+                "market_type": "spot" if inst.get("InstanceLifecycle") == "spot" else "on-demand",
                 "os_type": os_type or "unknown",
                 "az": az,
                 "status": status,

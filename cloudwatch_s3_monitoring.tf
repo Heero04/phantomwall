@@ -236,7 +236,7 @@ resource "aws_cloudwatch_metric_alarm" "log_query_lambda_duration" {
 
 resource "aws_cloudwatch_log_metric_filter" "s3_writes_success" {
   name           = "${var.project_name}-s3-writes-success-${var.environment}"
-  log_group_name = "/aws/lambda/${aws_lambda_function.suricata_ingest.function_name}"
+  log_group_name = aws_cloudwatch_log_group.suricata_ingest.name
   pattern        = "{ $.s3_writes > 0 }"
 
   metric_transformation {
@@ -249,7 +249,7 @@ resource "aws_cloudwatch_log_metric_filter" "s3_writes_success" {
 
 resource "aws_cloudwatch_log_metric_filter" "s3_writes_failed" {
   name           = "${var.project_name}-s3-writes-failed-${var.environment}"
-  log_group_name = "/aws/lambda/${aws_lambda_function.suricata_ingest.function_name}"
+  log_group_name = aws_cloudwatch_log_group.suricata_ingest.name
   pattern        = "S3 write error"
 
   metric_transformation {
@@ -262,7 +262,7 @@ resource "aws_cloudwatch_log_metric_filter" "s3_writes_failed" {
 
 resource "aws_cloudwatch_log_metric_filter" "dynamodb_alerts_stored" {
   name           = "${var.project_name}-dynamodb-alerts-stored-${var.environment}"
-  log_group_name = "/aws/lambda/${aws_lambda_function.suricata_ingest.function_name}"
+  log_group_name = aws_cloudwatch_log_group.suricata_ingest.name
   pattern        = "{ $.dynamodb_alerts > 0 }"
 
   metric_transformation {

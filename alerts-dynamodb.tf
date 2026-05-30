@@ -198,8 +198,8 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
   statement_id  = "AllowExecutionFromCloudWatchLogs"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.alert_indexer[0].function_name
-  principal     = "logs.amazonaws.com"
-  source_arn    = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:${var.cw_log_group}:*"
+  principal     = "logs.${data.aws_region.current.name}.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_log_group.suricata.arn}:*"
 }
 
 # Allow per-instance honeypot log groups (/honeypot/suricata/*) to invoke alert-indexer
@@ -208,19 +208,23 @@ resource "aws_lambda_permission" "allow_cloudwatch_per_instance" {
   statement_id  = "AllowExecutionFromCloudWatchLogsPerInstance"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.alert_indexer[0].function_name
-  principal     = "logs.amazonaws.com"
-  source_arn    = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/*"
+  principal     = "logs.${data.aws_region.current.name}.amazonaws.com"
+  source_arn    = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/honeypot/suricata/${var.project_name}-${var.environment}/*"
 }
 
 # Subscription filter to send only alerts to Lambda
 resource "aws_cloudwatch_log_subscription_filter" "suricata_alerts" {
   count           = local.alerts_enabled ? 1 : 0
   name            = "phantomwall-alert-filter-${var.environment}"
-  log_group_name  = var.cw_log_group
+  log_group_name  = aws_cloudwatch_log_group.suricata.name
   filter_pattern  = "{ $.event_type = \"alert\" }"
   destination_arn = aws_lambda_function.alert_indexer[0].arn
 
-  depends_on = [aws_lambda_permission.allow_cloudwatch]
+  depends_on = [
+    aws_lambda_permission.allow_cloudwatch,
+    aws_cloudwatch_log_group.suricata,
+    aws_cloudwatch_log_subscription_filter.suricata_to_lambda,
+  ]
 }
 
 # ==========================================

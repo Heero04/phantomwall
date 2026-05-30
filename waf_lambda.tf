@@ -123,17 +123,21 @@ resource "aws_apigatewayv2_route" "waf_status" {
 }
 
 resource "aws_apigatewayv2_route" "waf_toggle" {
-  count     = var.waf_enabled ? 1 : 0
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /waf/toggle-rule"
-  target    = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  count              = var.waf_enabled ? 1 : 0
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /waf/toggle-rule"
+  target             = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_apigatewayv2_route" "waf_lockdown" {
-  count     = var.waf_enabled ? 1 : 0
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /waf/lockdown"
-  target    = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  count              = var.waf_enabled ? 1 : 0
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /waf/lockdown"
+  target             = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_apigatewayv2_route" "waf_blocked_ips" {
@@ -144,17 +148,21 @@ resource "aws_apigatewayv2_route" "waf_blocked_ips" {
 }
 
 resource "aws_apigatewayv2_route" "waf_block_ip" {
-  count     = var.waf_enabled ? 1 : 0
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /waf/block-ip"
-  target    = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  count              = var.waf_enabled ? 1 : 0
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /waf/block-ip"
+  target             = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_apigatewayv2_route" "waf_unblock_ip" {
-  count     = var.waf_enabled ? 1 : 0
-  api_id    = aws_apigatewayv2_api.suricata.id
-  route_key = "POST /waf/unblock-ip"
-  target    = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  count              = var.waf_enabled ? 1 : 0
+  api_id             = aws_apigatewayv2_api.suricata.id
+  route_key          = "POST /waf/unblock-ip"
+  target             = "integrations/${aws_apigatewayv2_integration.waf_api[0].id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 resource "aws_lambda_permission" "apigw_waf_invoke" {

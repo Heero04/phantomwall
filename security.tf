@@ -17,6 +17,8 @@ Resources:
 // permissions and configurations. This resource is scoped to the account
 // rather than a single honeypot instance, but it's useful to keep in the
 // repo so the security posture is visible when the whole stack is applied.
+/* Disabled for demo — only one ACCOUNT-type analyzer allowed per region.
+   The dev environment already has one active.
 resource "aws_accessanalyzer_analyzer" "default" {
   analyzer_name = "${var.project_name}-security-analyzer-${var.environment}"
   type          = "ACCOUNT"
@@ -26,3 +28,4 @@ resource "aws_accessanalyzer_analyzer" "default" {
     Name    = "${var.project_name}-security-analyzer-${var.environment}"
   }
 }
+*/

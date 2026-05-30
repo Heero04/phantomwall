@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
+import { apiFetch } from "./lib/apiClient"
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
 
@@ -43,7 +44,7 @@ export default function ChatAssistant() {
         throw new Error("VITE_SURICATA_API_URL is not configured")
       }
 
-      const response = await fetch(`${API_URL}/chat`, {
+      const response = await apiFetch(`${API_URL}/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
