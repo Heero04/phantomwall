@@ -889,6 +889,11 @@ export default function HoneypotFleetManager() {
         </div>
       </section>
 
+      {/* ── Demo Limits Info ─────────────────────────────────── */}
+      <div className="fleet__alert fleet__alert--info" style={{ margin: '0 0 1rem', fontSize: '0.85rem' }}>
+        <strong>Demo limits:</strong> 1 spot instance max per account. Spot instances auto-terminate after 24 hours. Use the Attack button to generate live threat data.
+      </div>
+
       {/* ── Controls ─────────────────────────────────────────── */}
       <section className="fleet__controls">
         <div className="fleet__control-row">
@@ -1265,8 +1270,8 @@ POST ${API_URL || 'VITE_SURICATA_API_URL'}/fleet/action
                   <p>⚡ Launches with Suricata IDS + CloudWatch Agent pre-installed.</p>
                   <p>🖥️ Supports Ubuntu 22.04 LTS &amp; Amazon Linux 2023.</p>
                   <p>🛡️ Uses profile-specific security group &amp; IAM profile.</p>
-                  <p>📊 Instance cap is enforced server-side by your environment configuration.</p>
-                  <p>🧭 Deployable trap profiles today: Standard, SSH, HTTP, Telnet, Multi-Port.</p>
+                  <p>⏱️ Spot instances auto-terminate after 24 hours.</p>
+                  <p>🔒 Demo limit: 1 instance at a time. Destroy your current one to deploy a new one.</p>
                 </div>
 
                 <div className="fleet__modal-actions">

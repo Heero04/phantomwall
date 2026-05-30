@@ -177,7 +177,7 @@ resource "aws_lambda_function" "honeypot_provisioner" {
       INSTANCE_PROFILE  = aws_iam_instance_profile.cw_profile.name
       SUBNET_ID         = var.subnet_tag_value != "" && length(data.aws_subnets.by_tag.ids) > 0 ? data.aws_subnets.by_tag.ids[0] : var.public_subnet_id
       SCRIPTS_BUCKET    = aws_s3_bucket.honeypot_scripts.id
-      MAX_INSTANCES     = "5"
+      MAX_INSTANCES     = "1"
       SPOT_AUTO_DESTROY_HOURS = "24"
       # Per-instance log group pipeline
       CW_LOG_GROUP_PREFIX    = "/honeypot/suricata/${var.project_name}-${var.environment}"
