@@ -321,6 +321,28 @@ def _deploy(body: dict) -> dict:
     if not honeypot_name:
         honeypot_name = f"{PROJECT_TAG}-honeypot-{os_label}-{trap_profile}-{timestamp}"
 
+    # ── Auto-destroy tags for spot instances ────────────────────
+    # Applied at launch time via TagSpecifications so the provisioner
+    # role only needs ec2:CreateTags scoped to the RunInstances action.
+    spot_auto_destroy_at = None
+    instance_tags = [
+        {"Key": "Name", "Value": honeypot_name},
+        {"Key": "Project", "Value": PROJECT_TAG},
+        {"Key": "Env", "Value": ENVIRONMENT},
+        {"Key": "ManagedBy", "Value": "phantomwall-provisioner"},
+        {"Key": "OS", "Value": os_type},
+        {"Key": "TrapType", "Value": trap_profile},
+        {"Key": "TrapPorts", "Value": profile_info["ports"]},
+        {"Key": "LaunchedAt", "Value": timestamp},
+    ]
+    if market_type == "spot":
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=SPOT_AUTO_DESTROY_HOURS)
+        spot_auto_destroy_at = expires_at.isoformat()
+        instance_tags.extend([
+            {"Key": "AutoDestroyAfterHours", "Value": str(SPOT_AUTO_DESTROY_HOURS)},
+            {"Key": "AutoDestroyAt", "Value": spot_auto_destroy_at},
+        ])
+
     # ── Launch instance ─────────────────────────────────────────
     run_params = {
         "ImageId": ami_id,
@@ -331,16 +353,7 @@ def _deploy(body: dict) -> dict:
         "TagSpecifications": [
             {
                 "ResourceType": "instance",
-                "Tags": [
-                    {"Key": "Name", "Value": honeypot_name},
-                    {"Key": "Project", "Value": PROJECT_TAG},
-                    {"Key": "Env", "Value": ENVIRONMENT},
-                    {"Key": "ManagedBy", "Value": "phantomwall-provisioner"},
-                    {"Key": "OS", "Value": os_type},
-                    {"Key": "TrapType", "Value": trap_profile},
-                    {"Key": "TrapPorts", "Value": profile_info["ports"]},
-                    {"Key": "LaunchedAt", "Value": timestamp},
-                ],
+                "Tags": instance_tags,
             }
         ],
     }
@@ -375,18 +388,11 @@ def _deploy(body: dict) -> dict:
         launch_mode = "on-demand-fallback"
     instance = result["Instances"][0]
     instance_id = instance["InstanceId"]
-    spot_auto_destroy_at = None
 
-    if launch_mode == "spot":
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=SPOT_AUTO_DESTROY_HOURS)
-        spot_auto_destroy_at = expires_at.isoformat()
-        _ec2.create_tags(
-            Resources=[instance_id],
-            Tags=[
-                {"Key": "AutoDestroyAfterHours", "Value": str(SPOT_AUTO_DESTROY_HOURS)},
-                {"Key": "AutoDestroyAt", "Value": spot_auto_destroy_at},
-            ],
-        )
+    # If spot capacity forced an on-demand fallback, the auto-destroy
+    # tags applied at launch no longer apply (only spot auto-terminates).
+    if launch_mode != "spot":
+        spot_auto_destroy_at = None
 
     # ── Create per-instance log group + subscription filters ────
     log_group_result = _setup_instance_log_group(instance_id)
