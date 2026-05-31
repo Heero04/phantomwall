@@ -179,30 +179,6 @@ const Login = ({ onSwitchToSignup, onSwitchToForgotPassword, onSwitchToVerifyEma
           </button>
 
           <button
-            type="button"
-            onClick={() => {
-              if (!email.trim()) {
-                setError('Enter your email first, then click Verify email code.');
-                return;
-              }
-              setError('');
-              onSwitchToVerifyEmail(email.trim().toLowerCase());
-            }}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#06b6d4',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              marginBottom: '1.5rem',
-              marginLeft: '1rem',
-              padding: 0
-            }}
-          >
-            Verify email code
-          </button>
-
-          <button
             type="submit"
             disabled={loading}
             style={{
