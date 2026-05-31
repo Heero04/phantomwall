@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import '../components/Settings.css'
-import { useAuth } from '../contexts/AuthContext'
 
 const API_URL = import.meta.env.VITE_SURICATA_API_URL
 
@@ -150,14 +149,6 @@ const FormRow = ({ label, hint, children, stacked = false }) => (
    Main component
    ═══════════════════════════════════════════════════════════════ */
 export default function Settings() {
-  const { setupMfa, verifyMfaSetup } = useAuth()
-  /* ── MFA setup state ────────────────────────────────────── */
-  const [mfaSecret, setMfaSecret] = useState('')
-  const [mfaSetupCode, setMfaSetupCode] = useState('')
-  const [mfaSetupError, setMfaSetupError] = useState('')
-  const [mfaSetupDone, setMfaSetupDone] = useState(false)
-  const [mfaBusy, setMfaBusy] = useState(false)
-
   /* ── State ──────────────────────────────────────────────── */
   const [settings, setSettings] = useState(() => {
     try {
@@ -232,35 +223,6 @@ export default function Settings() {
       .map(b => b.toString(16).padStart(2, '0')).join('')
     update('api_key', key)
   }, [update])
-
-  /* ── MFA setup handlers ─────────────────────────────────── */
-  const startMfaSetup = useCallback(async () => {
-    setMfaSetupError('')
-    setMfaSetupDone(false)
-    setMfaBusy(true)
-    const result = await setupMfa()
-    setMfaBusy(false)
-    if (result.success) {
-      setMfaSecret(result.secretCode)
-    } else {
-      setMfaSetupError(result.error || 'Could not start MFA setup.')
-    }
-  }, [setupMfa])
-
-  const confirmMfaSetup = useCallback(async () => {
-    setMfaSetupError('')
-    setMfaBusy(true)
-    const result = await verifyMfaSetup(mfaSetupCode)
-    setMfaBusy(false)
-    if (result.success) {
-      setMfaSetupDone(true)
-      setMfaSecret('')
-      setMfaSetupCode('')
-      update('sec_mfaEnabled', true)
-    } else {
-      setMfaSetupError(result.error || 'Invalid code. Try again.')
-    }
-  }, [verifyMfaSetup, mfaSetupCode, update])
 
   /* ── Tabs ───────────────────────────────────────────────── */
   const TABS = [
@@ -663,55 +625,8 @@ export default function Settings() {
                 <span className="settings__slider-value">{settings.sec_sessionTimeoutMin} min</span>
               </div>
             </FormRow>
-            <FormRow label="Multi-Factor Authentication" hint="Use an authenticator app (Google Authenticator, Authy)" stacked>
-              {mfaSetupDone ? (
-                <div className="settings__api-result settings__api-result--ok">
-                  ✓ MFA enabled. You'll be asked for a code on your next sign-in.
-                </div>
-              ) : mfaSecret ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <p className="settings__hint">
-                    1. Open your authenticator app and add a new account using this secret key:
-                  </p>
-                  <code className="settings__input settings__input--mono" style={{ wordBreak: 'break-all', padding: '0.75rem' }}>
-                    {mfaSecret}
-                  </code>
-                  <p className="settings__hint">2. Enter the 6-digit code it generates:</p>
-                  <div className="settings__input-group">
-                    <input
-                      type="text"
-                      className="settings__input settings__input--mono"
-                      value={mfaSetupCode}
-                      onChange={e => setMfaSetupCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="000000"
-                      maxLength={6}
-                    />
-                    <button
-                      className="settings__inline-btn settings__inline-btn--accent"
-                      onClick={confirmMfaSetup}
-                      disabled={mfaBusy || mfaSetupCode.length !== 6}
-                    >
-                      {mfaBusy ? 'Verifying…' : 'Verify & Enable'}
-                    </button>
-                  </div>
-                  {mfaSetupError && (
-                    <div className="settings__api-result settings__api-result--fail">{mfaSetupError}</div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <button
-                    className="settings__inline-btn settings__inline-btn--accent"
-                    onClick={startMfaSetup}
-                    disabled={mfaBusy}
-                  >
-                    {mfaBusy ? 'Starting…' : 'Set Up Authenticator App'}
-                  </button>
-                  {mfaSetupError && (
-                    <div className="settings__api-result settings__api-result--fail">{mfaSetupError}</div>
-                  )}
-                </div>
-              )}
+            <FormRow label="Multi-Factor Authentication" hint="Authenticator app support — coming soon">
+              <span className="settings__role-badge">Coming soon</span>
             </FormRow>
             <FormRow label="Audit Logging" hint="Log all user actions for compliance">
               <Toggle checked={settings.sec_auditLogging} onChange={v => update('sec_auditLogging', v)} />
