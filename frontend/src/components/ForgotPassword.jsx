@@ -10,6 +10,7 @@ const ForgotPassword = ({ onBackToLogin, onResetSuccess }) => {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requestSuccess, setRequestSuccess] = useState('');
 
   const validatePassword = (password) => {
     const errors = [];
@@ -25,11 +26,13 @@ const ForgotPassword = ({ onBackToLogin, onResetSuccess }) => {
   const handleRequestCode = async (e) => {
     e.preventDefault();
     setError('');
+    setRequestSuccess('');
     setLoading(true);
 
     const result = await forgotPassword(email);
     
     if (result.success) {
+      setRequestSuccess(`Reset code sent to ${email}. Enter it below.`);
       setStep('confirm');
     } else {
       setError(result.error);
@@ -108,7 +111,7 @@ const ForgotPassword = ({ onBackToLogin, onResetSuccess }) => {
             color: 'white',
             marginBottom: '0.5rem'
           }}>
-            {step === 'request' ? 'Reset Password' : 'Create New Password'}
+            {step === 'request' ? 'Reset Password' : 'Enter Code & New Password'}
           </h1>
           <p style={{
             fontSize: '0.9rem',
@@ -116,10 +119,26 @@ const ForgotPassword = ({ onBackToLogin, onResetSuccess }) => {
           }}>
             {step === 'request' 
               ? 'Enter your email to receive a reset code' 
-              : `Code sent to ${email}`
+              : `Step 2: Enter the 6-digit code sent to ${email}`
             }
           </p>
         </div>
+
+        {/* Success Message */}
+        {requestSuccess && step === 'confirm' && (
+          <div style={{
+            background: 'rgba(34, 197, 94, 0.1)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            marginBottom: '1.5rem',
+            color: '#22c55e',
+            fontSize: '0.9rem',
+            textAlign: 'center'
+          }}>
+            ✓ {requestSuccess}
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (

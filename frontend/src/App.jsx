@@ -565,6 +565,10 @@ export default function App() {
       <Login
         onSwitchToSignup={() => setAuthView('signup')}
         onSwitchToForgotPassword={() => setAuthView('forgot')}
+        onSwitchToVerifyEmail={(email) => {
+          setVerificationEmail(email)
+          setAuthView('verify')
+        }}
       />
     )
   }

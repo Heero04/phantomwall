@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-const Login = ({ onSwitchToSignup, onSwitchToForgotPassword }) => {
+const Login = ({ onSwitchToSignup, onSwitchToForgotPassword, onSwitchToVerifyEmail }) => {
   const { login, error: authError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,7 +16,11 @@ const Login = ({ onSwitchToSignup, onSwitchToForgotPassword }) => {
     const result = await login(email, password);
     
     if (!result.success) {
-      setError(result.error);
+      const message = result.error || 'Sign in failed';
+      setError(message);
+      if (/verify your email/i.test(message) && email.trim()) {
+        onSwitchToVerifyEmail(email.trim().toLowerCase());
+      }
     }
     
     setLoading(false);
@@ -172,6 +176,30 @@ const Login = ({ onSwitchToSignup, onSwitchToForgotPassword }) => {
             }}
           >
             Forgot password?
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (!email.trim()) {
+                setError('Enter your email first, then click Verify email code.');
+                return;
+              }
+              setError('');
+              onSwitchToVerifyEmail(email.trim().toLowerCase());
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#06b6d4',
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              marginBottom: '1.5rem',
+              marginLeft: '1rem',
+              padding: 0
+            }}
+          >
+            Verify email code
           </button>
 
           <button
