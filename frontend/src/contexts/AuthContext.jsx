@@ -61,6 +61,7 @@ const getConfigErrorIfMissing = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState(null);
   const [mfaChallenge, setMfaChallenge] = useState(null);
 
@@ -91,6 +92,7 @@ export const AuthProvider = ({ children }) => {
       logout();
     } finally {
       setLoading(false);
+      setInitializing(false);
     }
   };
 
@@ -562,6 +564,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    initializing,
     error,
     mfaChallenge,
     login,

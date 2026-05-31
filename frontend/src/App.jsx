@@ -234,7 +234,7 @@ const NAV_ITEMS = [
 ]
 
 export default function App() {
-  const { user, loading: authLoading, isAuthenticated, logout, mfaChallenge, verifyMfaCode } = useAuth()
+  const { user, initializing: authLoading, isAuthenticated, logout, mfaChallenge, verifyMfaCode } = useAuth()
   const [authView, setAuthView] = useState('login')
   const [verificationEmail, setVerificationEmail] = useState('')
   const [mfaCode, setMfaCode] = useState('')
