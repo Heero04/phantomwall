@@ -66,7 +66,10 @@ resource "aws_cognito_user_pool" "phantomwall" {
   # Email Configuration (using Cognito default for now)
   # ----------------------------------------------------------
   email_configuration {
-    email_sending_account = "COGNITO_DEFAULT"
+    email_sending_account  = var.cognito_use_ses ? "DEVELOPER" : "COGNITO_DEFAULT"
+    source_arn             = var.cognito_use_ses ? aws_ses_domain_identity.cognito_email_domain[0].arn : null
+    from_email_address     = var.cognito_use_ses ? var.cognito_from_email : null
+    reply_to_email_address = var.cognito_use_ses ? var.cognito_reply_to_email : null
   }
 
   # ----------------------------------------------------------
@@ -111,9 +114,13 @@ resource "aws_cognito_user_pool" "phantomwall" {
   }
 
   # ----------------------------------------------------------
-  # MFA Configuration (Optional - disabled by default)
+  # MFA Configuration
   # ----------------------------------------------------------
-  mfa_configuration = "OFF" # Can be "ON" or "OPTIONAL" later
+  mfa_configuration = "OPTIONAL"
+
+  software_token_mfa_configuration {
+    enabled = true
+  }
 
   # ----------------------------------------------------------
   # Advanced Security (Adaptive Auth)

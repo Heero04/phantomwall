@@ -234,9 +234,12 @@ const NAV_ITEMS = [
 ]
 
 export default function App() {
-  const { user, loading: authLoading, isAuthenticated, logout } = useAuth()
+  const { user, loading: authLoading, isAuthenticated, logout, mfaChallenge, verifyMfaCode } = useAuth()
   const [authView, setAuthView] = useState('login')
   const [verificationEmail, setVerificationEmail] = useState('')
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaError, setMfaError] = useState('')
+  const [mfaLoading, setMfaLoading] = useState(false)
   const [activePage, setActivePage] = useState('console')
   const [language, setLanguage] = useState(() => {
     try {
@@ -458,6 +461,103 @@ export default function App() {
           onBackToLogin={() => setAuthView('login')}
           onResetSuccess={() => setAuthView('login')}
         />
+      )
+    }
+
+    if (mfaChallenge) {
+      const handleMfaSubmit = async (e) => {
+        e.preventDefault()
+        setMfaError('')
+        setMfaLoading(true)
+        const result = await verifyMfaCode(mfaCode)
+        setMfaLoading(false)
+        if (!result.success) {
+          setMfaError(result.error || 'Invalid code. Try again.')
+        } else {
+          setMfaCode('')
+        }
+      }
+
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem'
+        }}>
+          <div style={{
+            width: '100%',
+            maxWidth: '420px',
+            background: 'rgba(30, 41, 59, 0.6)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(100, 116, 139, 0.3)',
+            borderRadius: '1rem',
+            padding: '3rem',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🔐</div>
+              <h2 style={{ color: 'white', fontSize: '1.5rem', marginBottom: '0.5rem' }}>Two-Factor Authentication</h2>
+              <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Enter the 6-digit code from your authenticator app.</p>
+            </div>
+            {mfaError && (
+              <div style={{
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '0.5rem',
+                padding: '0.75rem',
+                marginBottom: '1rem',
+                color: '#ef4444',
+                fontSize: '0.85rem',
+                textAlign: 'center'
+              }}>{mfaError}</div>
+            )}
+            <form onSubmit={handleMfaSubmit}>
+              <input
+                type="text"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  background: 'rgba(15, 23, 42, 0.5)',
+                  border: '1px solid rgba(100, 116, 139, 0.3)',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 600,
+                  textAlign: 'center',
+                  letterSpacing: '0.5rem',
+                  outline: 'none',
+                  marginBottom: '1.5rem'
+                }}
+              />
+              <button
+                type="submit"
+                disabled={mfaLoading || mfaCode.length !== 6}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  background: (mfaLoading || mfaCode.length !== 6)
+                    ? 'rgba(100, 116, 139, 0.5)'
+                    : 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  cursor: (mfaLoading || mfaCode.length !== 6) ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {mfaLoading ? 'Verifying...' : 'Verify'}
+              </button>
+            </form>
+          </div>
+        </div>
       )
     }
 

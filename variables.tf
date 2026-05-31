@@ -214,3 +214,33 @@ variable "waf_enable_bot_control" {
   type        = bool
   default     = false
 }
+
+# ----------------------------------------------------------
+#            Cognito Email Delivery (SES)
+# ----------------------------------------------------------
+# Purpose: Enable reliable Cognito email delivery via SES
+# ----------------------------------------------------------
+
+variable "cognito_use_ses" {
+  description = "If true, Cognito uses SES (DEVELOPER mode) instead of COGNITO_DEFAULT"
+  type        = bool
+  default     = false
+}
+
+variable "cognito_email_domain" {
+  description = "Verified SES domain used for Cognito email delivery (e.g. phantomwalls.com)"
+  type        = string
+  default     = "phantomwalls.com"
+}
+
+variable "cognito_from_email" {
+  description = "From email address for Cognito emails"
+  type        = string
+  default     = "noreply@phantomwalls.com"
+}
+
+variable "cognito_reply_to_email" {
+  description = "Reply-to email address for Cognito emails"
+  type        = string
+  default     = "noreply@phantomwalls.com"
+}
